@@ -346,11 +346,10 @@ function syncE3(): void {
 function refreshE3Table(): void {
   const rows = [
     ['Fresh ciphertext', '100%'],
-    ['x 1 multiplication', '70%'],
-    ['x 2 multiplications', '45%'],
-    ['x 3 multiplications', '25%'],
-    ['x 5 multiplications', '5%'],
-    ['x 6 multiplications', '0% - decryption fails']
+    ['After 1 addition', '~99%'],
+    ['After 1 multiplication', '~60–70%'],
+    ['After 2 multiplications', '0% — decryption fails'],
+    ['Production (n≥4096)', '10–30 mul levels before exhaustion']
   ]
   const tbody = document.querySelector('[data-e3-table]') as HTMLElement
   tbody.innerHTML = rows.map((r) => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')

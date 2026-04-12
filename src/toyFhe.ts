@@ -66,6 +66,25 @@ function polyMulNegacyclic(a: number[], b: number[], n: number, q: number): numb
   return out
 }
 
+/** Negacyclic multiply WITHOUT mod-q reduction — returns raw signed sums.
+ *  Used by BFV multiplication which needs the full product before t/q scaling. */
+function polyMulNegacyclicRaw(a: number[], b: number[], n: number, q: number): number[] {
+  const ac = a.map((v) => centerLift(v, q))
+  const bc = b.map((v) => centerLift(v, q))
+  const out = new Array<number>(n).fill(0)
+  for (let i = 0; i < n; i += 1) {
+    for (let j = 0; j < n; j += 1) {
+      const k = i + j
+      if (k < n) {
+        out[k] += ac[i] * bc[j]
+      } else {
+        out[k - n] -= ac[i] * bc[j]
+      }
+    }
+  }
+  return out
+}
+
 function polyDivRound(a: number[], d: number, q: number): number[] {
   return a.map((v) => mod(Math.round(centerLift(v, q) / d), q))
 }
@@ -167,20 +186,27 @@ export class ToyBfvEngine {
   }
 
   multiplyNoRelin(a: InternalCiphertext, b: InternalCiphertext): InternalCiphertext {
-    const c00 = polyMulNegacyclic(a.components[0], b.components[0], this.params.n, this.params.q)
-    const c01 = polyMulNegacyclic(a.components[0], b.components[1], this.params.n, this.params.q)
-    const c10 = polyMulNegacyclic(a.components[1], b.components[0], this.params.n, this.params.q)
-    const c11 = polyMulNegacyclic(a.components[1], b.components[1], this.params.n, this.params.q)
+    const { n, q, t } = this.params
+
+    // BFV multiplication: compute tensor product WITHOUT mod-q reduction,
+    // then scale each coefficient by round(t * raw / q) and reduce mod q.
+    // This brings the ciphertext back to scale=delta in one step.
+    const d0Raw = polyMulNegacyclicRaw(a.components[0], b.components[0], n, q)
+    const d1aRaw = polyMulNegacyclicRaw(a.components[0], b.components[1], n, q)
+    const d1bRaw = polyMulNegacyclicRaw(a.components[1], b.components[0], n, q)
+    const d2Raw = polyMulNegacyclicRaw(a.components[1], b.components[1], n, q)
+
+    const d1Raw = d1aRaw.map((v, i) => v + d1bRaw[i])
+
+    const scaleCoeff = (v: number): number => mod(Math.round(v * t / q), q)
 
     return {
-      components: [c00, polyAdd(c01, c10, this.params.q), c11],
-      noise: zeroPoly(this.params.n),
-      q: this.params.q,
-      t: this.params.t,
-      n: this.params.n,
-      encoding: `Delta^2=${a.scale * b.scale}`,
-      scale: a.scale * b.scale,
-      message: a.message.map((v, i) => mod(v * b.message[i], this.params.t))
+      components: [d0Raw.map(scaleCoeff), d1Raw.map(scaleCoeff), d2Raw.map(scaleCoeff)],
+      noise: zeroPoly(n),
+      q, t, n,
+      encoding: `Delta=${this.delta}`,
+      scale: this.delta,
+      message: a.message.map((v, i) => mod(v * b.message[i], t))
     }
   }
 
