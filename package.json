@@ -1,0 +1,17 @@
+{
+  "name": "crypto-lab-fhe-arena",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && gh-pages -d dist"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.4"
+  }
+}
