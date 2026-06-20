@@ -293,21 +293,64 @@ export class ToyBfvEngine {
     return maxNoise
   }
 
-  noiseBudgetPct(ct: InternalCiphertext): number {
+  /** Maximum noise budget of a fresh ciphertext, in bits.
+   *  Decryption decodes round(coeff / Delta) and fails once |e| > Delta/2,
+   *  so the budget is log2((Delta/2) / |e|). A fresh ciphertext has |e| ≈ 1. */
+  get freshBudgetBits(): number {
+    return Math.log2(this.delta / 2)
+  }
+
+  /** Remaining noise budget in bits — the metric real FHE libraries report
+   *  (cf. Microsoft SEAL's invariant_noise_budget). Hits 0 when decryption fails. */
+  noiseBudgetBits(ct: InternalCiphertext): number {
     const threshold = ct.scale / 2
-    const used = this.noiseMagnitude(ct)
-    const remain = Math.max(0, 1 - used / Math.max(1, threshold))
-    return Math.round(remain * 100)
+    const used = Math.max(1, this.noiseMagnitude(ct))
+    return Math.max(0, Math.log2(threshold / used))
+  }
+
+  /** Budget as a percentage of a fresh ciphertext's budget, for the visual meter. */
+  noiseBudgetPct(ct: InternalCiphertext): number {
+    return Math.round(Math.min(100, (this.noiseBudgetBits(ct) / this.freshBudgetBits) * 100))
+  }
+
+  /** Health band for color-coding the budget meter. */
+  noiseHealth(ct: InternalCiphertext): 'healthy' | 'warning' | 'critical' {
+    const bits = this.noiseBudgetBits(ct)
+    if (bits >= 6) return 'healthy'
+    if (bits >= 1.5) return 'warning'
+    return 'critical'
+  }
+
+  /** Opens up the decryption identity for slot 0 so learners can SEE the noise:
+   *  c0 + c1·s  =  Delta·m + e   (mod q). Returns the signal Delta·m, the actual
+   *  recovered value, the noise e, and the final decoded integer. */
+  decryptionTrace(ct: InternalCiphertext): {
+    delta: number
+    m: number
+    signal: number
+    recovered: number
+    noise: number
+    decoded: number
+  } {
+    const pt = this.decryptPoly(ct)
+    const recovered = centerLift(pt[0], this.params.q)
+    const m = ct.message[0]
+    const signal = centerLift(mod(m * ct.scale, this.params.q), this.params.q)
+    const noise = centerLift(recovered - signal, this.params.q)
+    return {
+      delta: ct.scale,
+      m,
+      signal,
+      recovered,
+      noise,
+      decoded: decodeScalar(pt, this.params.t, this.params.q, ct.scale)
+    }
   }
 
   formatCipher(ct: InternalCiphertext): string {
     return ct.components
       .map((poly, idx) => `c${idx}: ${trimHex(poly.slice(0, 12))} ...`)
       .join('\n')
-  }
-
-  randomGarbage(): number {
-    return randomInt(0, this.params.t - 1)
   }
 
 }

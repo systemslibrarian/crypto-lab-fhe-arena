@@ -10,6 +10,9 @@
   --wire: rgba(255, 255, 255, 0.5);
   --edge: rgba(255, 255, 255, 0.14);
   --focus: #00ffcc;
+  --healthy: #00ffcc;
+  --warning: #ffb454;
+  --critical: #ff5470;
 }
 
 html[data-theme='light'] {
@@ -24,6 +27,9 @@ html[data-theme='light'] {
   --wire: rgba(7, 7, 15, 0.6);
   --edge: rgba(0, 0, 0, 0.16);
   --focus: #0d6f5e;
+  --healthy: #0d6f5e;
+  --warning: #b5651d;
+  --critical: #c02a3f;
 }
 
 /* ── Skip link (ADA) ── */
@@ -177,7 +183,20 @@ ul {
   border: 1px solid var(--edge);
   background: var(--panel);
   padding: clamp(0.75rem, 2vw, 1.2rem);
+  min-width: 0; /* let grid track shrink; prevents long URLs forcing overflow */
 }
+
+/* Long words / URLs must wrap rather than widen their container */
+.grid-2 > *,
+.grid-3 > *,
+.flow-step { min-width: 0; }
+
+p,
+li,
+a,
+figcaption,
+.flow-what,
+.param-v { overflow-wrap: break-word; }
 
 .grid-2 {
   display: grid;
@@ -281,8 +300,295 @@ html[data-theme='light'] textarea {
 
 .budget-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--orange), var(--green));
-  transition: width 0.3s ease;
+  background: var(--healthy);
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.budget[data-health='healthy'] .budget-fill { background: var(--healthy); }
+.budget[data-health='warning'] .budget-fill { background: var(--warning); }
+.budget[data-health='critical'] .budget-fill { background: var(--critical); }
+
+/* ── Health tags & verification badges ── */
+.health-tag,
+.badge {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid currentColor;
+  font-size: 0.82em;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+
+.health-healthy { color: var(--healthy); }
+.health-warning { color: var(--warning); }
+.health-critical { color: var(--critical); }
+
+.badge-ok { color: var(--healthy); }
+.badge-fail { color: var(--critical); }
+
+tr.health-row-warning td:nth-child(4) { color: var(--warning); font-weight: 700; }
+tr.health-row-critical td:nth-child(4),
+tr.health-row-critical td:nth-child(5) { color: var(--critical); font-weight: 700; }
+
+/* ── Guided learning path ── */
+.guide {
+  margin-top: 1rem;
+  border: 1px solid var(--green-soft);
+  border-left: 3px solid var(--green);
+  padding: 0.9rem 1rem;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+html[data-theme='light'] .guide {
+  border-color: var(--orange-soft);
+  border-left-color: var(--orange);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.guide-steps {
+  margin: 0.6rem 0;
+}
+
+.guide-steps li {
+  margin-bottom: 0.2rem;
+}
+
+.legend {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.legend-chip {
+  display: inline-block;
+  padding: 0.02rem 0.4rem;
+  border: 1px solid currentColor;
+  margin: 0 0.15rem;
+}
+
+.legend-healthy { color: var(--healthy); }
+.legend-warning { color: var(--warning); }
+.legend-critical { color: var(--critical); }
+
+/* ── Client/server flow band ── */
+.flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin: 0.9rem 0;
+}
+
+.flow-step {
+  flex: 1 1 200px;
+  border: 1px solid var(--edge);
+  padding: 0.6rem 0.7rem;
+  background: rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+html[data-theme='light'] .flow-step { background: rgba(255, 255, 255, 0.5); }
+
+.flow-blind {
+  border-color: var(--orange-soft);
+  border-left: 3px solid var(--orange);
+}
+
+.flow-who {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85em;
+  color: var(--green);
+}
+
+.flow-blind .flow-who { color: var(--orange); }
+
+.flow-what {
+  color: var(--muted);
+  font-size: 0.92em;
+}
+
+.flow-arrow {
+  align-self: center;
+  color: var(--muted);
+  font-size: 1.4rem;
+}
+
+/* ── Step number chips on action buttons ── */
+.step-num {
+  display: inline-grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.35rem;
+  border-radius: 50%;
+  background: currentColor;
+  color: var(--bg);
+  font-size: 0.78rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+/* ── Decryption reveal panel ── */
+.reveal {
+  margin-top: 0.9rem;
+  border: 1px solid var(--green-soft);
+  padding: 0.8rem;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+html[data-theme='light'] .reveal { background: rgba(255, 255, 255, 0.5); }
+
+.reveal h3 { margin-bottom: 0.4rem; }
+
+.reveal-eq {
+  margin-top: 0.6rem;
+  line-height: 1.7;
+}
+
+code {
+  background: rgba(0, 255, 204, 0.1);
+  padding: 0.05rem 0.3rem;
+  border-radius: 2px;
+}
+
+html[data-theme='light'] code { background: rgba(13, 111, 94, 0.12); }
+
+/* ── Semantic-security demo ── */
+.semantic {
+  margin-top: 0.9rem;
+  border: 1px solid var(--edge);
+  padding: 0.8rem;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+html[data-theme='light'] .semantic { background: rgba(255, 255, 255, 0.5); }
+
+.semantic h3 { margin-bottom: 0.4rem; }
+
+/* ── Noise-budget chart ── */
+.chart-wrap { margin: 0.9rem 0; }
+
+.chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--edge);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+html[data-theme='light'] .chart svg { background: rgba(255, 255, 255, 0.5); }
+
+.chart-grid { stroke: var(--edge); stroke-width: 1; }
+.chart-fail { stroke: var(--critical); stroke-width: 1.5; stroke-dasharray: 5 4; }
+
+.chart-line {
+  fill: none;
+  stroke: var(--text);
+  stroke-opacity: 0.55;
+  stroke-width: 2;
+}
+
+.chart-tick,
+.chart-axis {
+  fill: var(--muted);
+  font-size: 11px;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+figcaption {
+  color: var(--muted);
+  font-size: 0.85em;
+  margin-top: 0.4rem;
+}
+
+.callout-why { border-color: var(--orange-soft); }
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* In forced-colors mode, keep chart strokes visible */
+@media (forced-colors: active) {
+  .chart-line { stroke: CanvasText; }
+  .chart-fail { stroke: CanvasText; }
+}
+
+/* ── Parameter explorer ── */
+input[type='range'] {
+  width: 100%;
+  margin: 0.4rem 0 0.8rem;
+  accent-color: var(--green);
+}
+
+html[data-theme='light'] input[type='range'] { accent-color: var(--orange); }
+
+.param-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem 0.9rem;
+  border: 1px solid var(--green-soft);
+  padding: 0.8rem;
+}
+
+.param-card > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.param-k {
+  color: var(--muted);
+  font-size: 0.82em;
+}
+
+.param-v {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.05em;
+  color: var(--green);
+}
+
+html[data-theme='light'] .param-v { color: var(--orange); }
+
+/* ── Encrypted vote tally ── */
+.vote-demo {
+  margin-top: 1rem;
+  border: 1px solid var(--edge);
+  padding: 0.9rem;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+html[data-theme='light'] .vote-demo { background: rgba(255, 255, 255, 0.5); }
+
+.vote-demo h3 { margin-bottom: 0.4rem; }
+
+.vote-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.7rem 0;
+}
+
+.vote-chip {
+  min-height: 44px;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid currentColor;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'Share Tech Mono', monospace;
+  transition: background-color 0.15s;
+}
+
+.vote-chip.vote-yes { color: var(--healthy); }
+.vote-chip.vote-no { color: var(--muted); }
+.vote-chip.vote-yes:hover { background: var(--green-soft); }
+.vote-chip.vote-no:hover { background: rgba(127, 127, 127, 0.18); }
+
+@media (max-width: 520px) {
+  .param-card { grid-template-columns: 1fr; }
+  .vote-chip { flex: 1 1 28%; text-align: center; }
 }
 
 /* ── Table — horizontally scrollable on small screens ── */
