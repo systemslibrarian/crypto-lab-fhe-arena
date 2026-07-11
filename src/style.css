@@ -624,12 +624,14 @@ html[data-theme='light'] th {
   background-color: rgba(0, 0, 0, 0.03);
 }
 
-a {
+/* Page links only — never the always-dark shared header (.cl-topbar), whose
+   own light-on-dark colors would otherwise be overridden and fail contrast. */
+a:not(.cl-topbar a) {
   color: var(--green);
   text-underline-offset: 2px;
 }
 
-html[data-theme='light'] a {
+html[data-theme='light'] a:not(.cl-topbar a) {
   color: var(--orange);
 }
 

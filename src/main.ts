@@ -128,7 +128,7 @@ app.innerHTML = `
             scaled by <code>Δ = ⌊q/t⌋</code>, plus tiny noise <code>e</code>. Divide by <code>Δ</code>, round, and the noise vanishes.
             Decryption only fails once <code>|e|</code> exceeds <code>Δ/2</code>.
           </p>
-          <pre class="mono reveal-eq" data-e2-eq aria-label="Decryption equation with live values"></pre>
+          <pre class="mono reveal-eq" data-e2-eq role="region" aria-live="polite" aria-label="Decryption equation with live values"></pre>
         </div>
         <div class="semantic">
           <h3>Semantic security: same input, different ciphertext</h3>
