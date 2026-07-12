@@ -3,20 +3,28 @@ import { ToyBfvEngine, type InternalCiphertext } from './toyFhe'
 import type { Theme } from './types'
 
 const engine = new ToyBfvEngine()
-const { q, t, n } = engine.params
+const { q, t } = engine.params
 const app = document.querySelector('#app') as HTMLDivElement
 
 app.innerHTML = `
   <div class="app">
-    <header class="app-header" role="banner">
+    <div class="app-header">
       <button class="theme-toggle" data-theme-toggle aria-label="Switch to light mode">🌙</button>
-      <h1>FHE Arena: BFV Integer Homomorphic Encryption</h1>
-      <p class="subtitle">
-        A live, correct toy of <strong>BFV</strong> encryption over real ring arithmetic (n=${n}, t=${t}, q=${q}) with measured noise growth.
-        Every number below is computed, not faked. <strong>Toy parameters — not production strength.</strong>
-        Production BFV/BGV uses n &ge; 4096 and tuned coefficient-modulus chains.
-        The engine that runs here is BFV; <strong>BGV</strong> (its close relative) is compared in the tables and prose but is not a separate live engine.
-      </p>
+      <header class="cl-hero">
+        <div class="cl-hero-main">
+          <h1 class="cl-hero-title">FHE Arena</h1>
+          <p class="cl-hero-sub">Integer FHE · BFV scheme</p>
+          <p class="cl-hero-desc">
+            Encrypt integers, add and multiply them on a blind server, then decrypt via Δ·m + e and watch the noise budget shrink until decryption fails.
+          </p>
+        </div>
+        <aside class="cl-hero-why" aria-label="Why it matters">
+          <span class="cl-hero-why-label">WHY IT MATTERS</span>
+          <p class="cl-hero-why-text">
+            Homomorphic encryption lets a server compute on data it can never read — the promise behind private cloud, medical, and financial analytics. The noise budget is what makes or breaks it: overflow it and the answer is silently lost.
+          </p>
+        </aside>
+      </header>
 
       <div class="guide" role="note" aria-label="How to use this lab">
         <strong>Start here.</strong> Homomorphic encryption lets a server compute on data it cannot read.
@@ -38,7 +46,7 @@ app.innerHTML = `
           — measured in <strong>bits</strong>, like Microsoft SEAL's <code>invariant_noise_budget</code>.
         </p>
       </div>
-    </header>
+    </div>
 
     <main class="exhibits" id="main-content" aria-label="Six interactive FHE exhibits">
 
