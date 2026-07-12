@@ -33,6 +33,9 @@ jobs:
       - name: Build site
         run: npm run build
 
+      - name: Crypto unit tests (vitest)
+        run: npm test
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 

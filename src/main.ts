@@ -10,11 +10,12 @@ app.innerHTML = `
   <div class="app">
     <header class="app-header" role="banner">
       <button class="theme-toggle" data-theme-toggle aria-label="Switch to light mode">🌙</button>
-      <h1>FHE Arena: BGV/BFV Integer Homomorphic Encryption</h1>
+      <h1>FHE Arena: BFV Integer Homomorphic Encryption</h1>
       <p class="subtitle">
-        A live, correct toy of BFV encryption over real ring arithmetic (n=${n}, t=${t}, q=${q}) with measured noise growth.
+        A live, correct toy of <strong>BFV</strong> encryption over real ring arithmetic (n=${n}, t=${t}, q=${q}) with measured noise growth.
         Every number below is computed, not faked. <strong>Toy parameters — not production strength.</strong>
         Production BFV/BGV uses n &ge; 4096 and tuned coefficient-modulus chains.
+        The engine that runs here is BFV; <strong>BGV</strong> (its close relative) is compared in the tables and prose but is not a separate live engine.
       </p>
 
       <div class="guide" role="note" aria-label="How to use this lab">
@@ -25,7 +26,7 @@ app.innerHTML = `
           <li><a href="#exhibit-1">The idea</a> — compute on locked boxes.</li>
           <li><a href="#exhibit-2">Encrypt &amp; add</a> — see the <code>Δ·m + e</code> equation that makes it work.</li>
           <li><a href="#exhibit-3">Noise budget</a> — why multiply is far costlier than add.</li>
-          <li><a href="#exhibit-4">Multiply &amp; relinearize</a> — ciphertexts grow, then shrink; SIMD batching.</li>
+          <li><a href="#exhibit-4">Multiply &amp; relinearize</a> — ciphertexts grow, then shrink; coefficient packing.</li>
           <li><a href="#exhibit-5">BGV vs BFV vs TFHE</a> — pick the right scheme.</li>
           <li><a href="#exhibit-6">In production</a> — where this is deployed today.</li>
         </ol>
@@ -65,7 +66,7 @@ app.innerHTML = `
             <h3>Four Generations of FHE</h3>
             <ol>
               <li><strong>Gentry 2009</strong> — first bootstrapped FHE (proof of possibility).</li>
-              <li><strong>BGV / BFV 2011–2012</strong> — practical <em>leveled</em> integer FHE (this lab).</li>
+              <li><strong>BGV / BFV 2011–2012</strong> — practical <em>leveled</em> integer FHE (this lab runs BFV live; BGV is compared).</li>
               <li><strong>TFHE 2016</strong> — fast bootstrapped bit-level gates.</li>
               <li><strong>CKKS 2017</strong> — approximate arithmetic for real-valued workloads.</li>
             </ol>
@@ -145,6 +146,12 @@ app.innerHTML = `
             <pre class="mono" data-e2-sem2 aria-label="Second encryption of A">—</pre>
           </div>
           <p data-e2-sem-note aria-live="polite" role="status"></p>
+          <p class="footer-note">
+            Honest caveat: this toy samples its randomness with <code>Math.random()</code>, which is not
+            cryptographically secure. A real implementation (and other crypto-lab demos) would use
+            <code>crypto.getRandomValues</code>. Combined with the toy parameters, that is why this lab teaches
+            the structure of BFV without providing any real security.
+          </p>
         </div>
         <div class="callout" role="note"><strong>Key insight:</strong> homomorphic addition just adds the two ciphertext polynomials. The server moves random-looking numbers around; the structure <code>Δ·m + e</code> only re-emerges under your secret key.</div>
       </section>
@@ -196,7 +203,7 @@ app.innerHTML = `
       </section>
 
       <section class="exhibit" id="exhibit-4" aria-labelledby="e4-heading" tabindex="-1">
-        <h2 id="e4-heading">Exhibit 4 · Multiply, Relinearize, and Batch (SIMD)</h2>
+        <h2 id="e4-heading">Exhibit 4 · Multiply, Relinearize, and Pack (Batched Add)</h2>
         <p>
           Multiplying two 2-part ciphertexts yields a <strong>3-part</strong> ciphertext. <em>Relinearization</em> uses a
           public key-switching key to shrink it back to 2 parts (and rescale it), so you can keep computing.
@@ -225,8 +232,16 @@ app.innerHTML = `
         </div>
         <p data-e4-budget-label aria-live="polite">Budget: 100%</p>
 
-        <h3>Batching (SIMD): one operation, many values</h3>
-        <p>A single ciphertext packs many integers into independent slots. One homomorphic add processes all slots at once — this is how FHE amortizes its cost. Enter up to 4 integers each (0–${t - 1}), comma-separated.</p>
+        <h3>Coefficient packing: one add, many values</h3>
+        <p>A single ciphertext packs many integers into independent <em>coefficient</em> slots. One homomorphic add processes all of them at once — this is how FHE amortizes its cost. Enter up to 4 integers each (0–${t - 1}), comma-separated.</p>
+        <div class="callout" role="note">
+          <strong>Honest scope:</strong> this demo packs values into polynomial <em>coefficients</em>, so
+          <em>addition</em> is genuinely slot-wise (this batching exhibit only adds). That is <strong>not</strong> the
+          same as production BFV <em>SIMD batching</em>, which packs into CRT/NTT evaluation slots so that
+          <em>multiplication</em> is also slot-wise. Under this toy's coefficient encoding, multiplying two packed
+          ciphertexts is a negacyclic convolution that mixes slots together — so we deliberately do not offer a
+          &ldquo;batched multiply&rdquo; here.
+        </div>
         <div class="grid-2">
           <div>
             <label for="batch-a">Batch A</label>
@@ -260,7 +275,7 @@ app.innerHTML = `
               <tr><td>Batching (SIMD)</td><td>Yes (CRT packing)</td><td>Yes (CRT packing)</td><td>No</td></tr>
               <tr><td>Best for</td><td>Deeper integer circuits</td><td>Accessible integer workloads</td><td>Arbitrary bit logic</td></tr>
               <tr><td>Libraries</td><td>HElib, OpenFHE</td><td>SEAL (default), OpenFHE</td><td>TFHE-rs, Concrete</td></tr>
-              <tr><td>In crypto-lab</td><td>This demo</td><td>This demo</td><td>Blind Oracle</td></tr>
+              <tr><td>In crypto-lab</td><td>Compared here (not a live engine)</td><td>This demo's live engine</td><td>Blind Oracle</td></tr>
             </tbody>
           </table>
         </div>
@@ -739,7 +754,7 @@ let batchLen = 0
   }
   const len = Math.min(batchSum.message.length, batchLen || 4)
   const out = engine.decryptVector(batchSum, len)
-  batchOut.innerHTML = `Decrypted SIMD sum: <strong>[${out.join(', ')}]</strong> — ${out.length} addition${out.length === 1 ? '' : 's'} from a single ciphertext operation.`
+  batchOut.innerHTML = `Decrypted packed sum: <strong>[${out.join(', ')}]</strong> — ${out.length} slot-wise addition${out.length === 1 ? '' : 's'} from a single ciphertext operation.`
 })
 
 // ── Exhibit 5: timing ──────────────────────────────────────────────────────

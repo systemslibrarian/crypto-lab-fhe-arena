@@ -19,7 +19,9 @@ const BASE_PARAMS: ToyParams = {
 
 function mod(x: number, m: number): number {
   const r = x % m
-  return r < 0 ? r + m : r
+  // `+ 0` normalizes JS's signed zero: (-0 % m) is -0, and we want a canonical
+  // non-negative 0 so decrypted values compare cleanly (e.g. m·0 -> 0, not -0).
+  return (r < 0 ? r + m : r) + 0
 }
 
 function centerLift(x: number, q: number): number {
@@ -31,6 +33,11 @@ function zeroPoly(n: number): number[] {
   return Array.from({ length: n }, () => 0)
 }
 
+// TOY randomness. This uses Math.random(), which is NOT cryptographically
+// secure — it is fine for a teaching toy whose parameters are already far below
+// production security, and it keeps sampling dependency-free. A production (or
+// even a serious toy) implementation would draw from crypto.getRandomValues,
+// as other crypto-lab demos do. This is disclosed in the UI's honesty note.
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }

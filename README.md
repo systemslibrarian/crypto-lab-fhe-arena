@@ -2,7 +2,9 @@
 
 ## What It Is
 
-FHE Arena demonstrates BGV (Brakerski-Gentry-Vaikuntanathan, 2012) and BFV (Fan-Vercauteren, 2012) — the two most widely deployed integer Fully Homomorphic Encryption schemes. Both encrypt integers and support addition and multiplication directly on ciphertexts, allowing a server to compute on encrypted data without ever decrypting it. The central challenge is the noise budget: every operation adds noise to the ciphertext, and when noise exceeds a threshold, decryption fails. BGV manages this via modulus switching; BFV via rescaling. This demo is the integer FHE companion to Blind Oracle (TFHE bit-level FHE).
+FHE Arena runs a live toy of **BFV** (Fan-Vercauteren, 2012) — one of the two most widely deployed integer Fully Homomorphic Encryption schemes — and **compares** it against its close relative **BGV** (Brakerski-Gentry-Vaikuntanathan, 2012) in the tables and prose. Only BFV is implemented as a runnable engine here; BGV is discussed for contrast, not executed. Both schemes encrypt integers and support addition and multiplication directly on ciphertexts, allowing a server to compute on encrypted data without ever decrypting it. The central challenge is the noise budget: every operation adds noise to the ciphertext, and when noise exceeds a threshold, decryption fails. BGV manages this via modulus switching; BFV via rescaling. This demo is the integer FHE companion to Blind Oracle (TFHE bit-level FHE).
+
+> **Honesty note.** The live engine is a *toy* BFV over real negacyclic ring arithmetic at insecure parameters (n=64, t=17, q=65537). It samples randomness with `Math.random()` (not cryptographically secure) and does **not** implement production BFV *SIMD batching*: values are packed into polynomial **coefficient** slots, so batched **addition** is genuinely slot-wise, but multiplication is a negacyclic convolution that mixes slots — unlike real CRT/NTT-slot SIMD. BGV is not a second live engine. Everything the demo *computes* (encrypt/decrypt, add, multiply→relinearize→rescale, noise budgets, the vote tally) is real and unit-tested; nothing is faked.
 
 ## When to Use It
 
@@ -30,7 +32,7 @@ Every number in the demo is computed by a real (toy-parameter) BFV engine over g
 - **A live private computation.** Cast ten secret Yes/No ballots, encrypt them, homomorphically sum the ciphertexts, and decrypt *only the tally* — the headline FHE application, verifiable end to end, with no individual vote ever revealed.
 - **Verification badges.** Encrypted results are checked against plaintext arithmetic with ✓/✗ badges, so the homomorphic payoff is unmissable.
 
-Six exhibits: the core idea (compute on locked boxes, with a client/server trust diagram); encrypt-add-decrypt with the live `Δ·m + e` reveal and a semantic-security demo; the noise-budget visualizer with a live chart, animated "multiply until it breaks", and a bootstrapping refresh; multiplication, relinearization (2→3→2 ciphertext components) and SIMD batching; a BGV vs BFV vs TFHE comparison table, decision tree, and interactive parameter explorer; and real-world FHE deployments capped by a live encrypted vote tally.
+Six exhibits: the core idea (compute on locked boxes, with a client/server trust diagram); encrypt-add-decrypt with the live `Δ·m + e` reveal and a semantic-security demo; the noise-budget visualizer with a live chart, animated "multiply until it breaks", and a bootstrapping refresh; multiplication, relinearization (2→3→2 ciphertext components) and coefficient packing (batched add); a BGV vs BFV vs TFHE comparison table, decision tree, and interactive parameter explorer; and real-world FHE deployments capped by a live encrypted vote tally.
 
 ## What Can Go Wrong
 
@@ -56,6 +58,15 @@ cd crypto-lab-fhe-arena
 npm install
 npm run dev
 ```
+
+## Tests
+
+```bash
+npm test          # vitest: toy-BFV crypto unit tests (round-trip, add, multiply→relinearize→rescale, noise budget, vote tally)
+npm run test:a11y # Playwright + axe-core WCAG A/AA gate (both themes)
+```
+
+`npm test` runs the crypto unit tests in `src/toyFhe.test.ts` and does **not** collect the Playwright a11y spec in `e2e/`. The tests assert the claims the demo makes on screen: encrypt/decrypt round-trips for every plaintext, homomorphic add and multiply match plaintext arithmetic mod *t*, relinearization shrinks 3→2 components without changing the value, the noise budget is a real measurement (multiply consumes far more than add and eventually reaches 0 bits), encryption is randomized (IND-CPA), and the encrypted vote tally returns the true sum.
 
 ## Related Demos
 
