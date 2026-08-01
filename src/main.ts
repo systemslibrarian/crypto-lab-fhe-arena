@@ -203,7 +203,7 @@ app.innerHTML = `
           </table>
         </div>
         <div class="callout" role="note">
-          <strong>Modulus switching (BGV) &amp; rescaling (BFV)</strong> rein in noise after each multiplication so more levels fit before exhaustion.
+          <strong>Modulus switching (BGV) &amp; scale invariance (BFV)</strong> rein in noise after each multiplication so more levels fit before exhaustion. BGV drops to a smaller modulus level by level; BFV instead keeps the plaintext in the high-order bits (&Delta;&nbsp;=&nbsp;&lfloor;q/t&rfloor;), holding the noise-to-modulus ratio steady without per-level switching. <em>Rescaling</em> is CKKS's technique, and it manages the plaintext scale rather than noise alone.
           A production ciphertext (n&nbsp;≥&nbsp;4096, large q) starts with ~100+ bits of budget — enough for 10–30 multiplications.
           When levels run out, only <em>bootstrapping</em> — homomorphically decrypting to refresh the budget — lets computation continue.
           Press <strong>♻ Bootstrap</strong> to watch the budget snap back to full. The honest caveat: real bootstrapping runs <em>without</em> the secret key (that is what makes it so expensive) and must happen <em>before</em> the budget hits 0 — it refreshes noise, it cannot recover data already destroyed by overflow.
@@ -278,7 +278,7 @@ app.innerHTML = `
             <tbody>
               <tr><td>Data type</td><td>Integers mod t</td><td>Integers mod t</td><td>Single bits</td></tr>
               <tr><td>Operations</td><td>Add, multiply</td><td>Add, multiply</td><td>Boolean gates</td></tr>
-              <tr><td>Noise management</td><td>Modulus switching</td><td>Scaling &amp; rescaling</td><td>Frequent bootstrapping</td></tr>
+              <tr><td>Noise management</td><td>Modulus switching</td><td>Scale-invariant (no per-level switching)</td><td>Frequent bootstrapping</td></tr>
               <tr><td>Multiplication depth</td><td>~10–30 levels</td><td>~10–20 levels</td><td>Unlimited (bootstrap each gate)</td></tr>
               <tr><td>Batching (SIMD)</td><td>Yes (CRT packing)</td><td>Yes (CRT packing)</td><td>No</td></tr>
               <tr><td>Best for</td><td>Deeper integer circuits</td><td>Accessible integer workloads</td><td>Arbitrary bit logic</td></tr>
