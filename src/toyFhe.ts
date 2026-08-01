@@ -235,6 +235,14 @@ export class ToyBfvEngine {
     }
   }
 
+  /**
+   * Safety net only. BFV is scale-invariant: multiplyNoRelin already applies the
+   * round(t·raw/q) scaling and returns scale = Delta, and relinearize leaves the
+   * scale alone — so on every path this demo actually takes, this function
+   * returns its input unchanged (verified over all t*t plaintext pairs and over
+   * chained multiplications). It exists so a future op that leaves an inflated
+   * scale behind cannot silently produce wrong plaintexts.
+   */
   rescaleToDelta(ct: InternalCiphertext): InternalCiphertext {
     if (ct.scale <= this.delta) {
       return ct

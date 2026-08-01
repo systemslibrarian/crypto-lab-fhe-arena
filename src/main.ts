@@ -68,7 +68,7 @@ app.innerHTML = `
             <h3>BGV vs BFV</h3>
             <p>Both are RLWE-based integer FHE schemes whose ciphertexts accumulate noise.</p>
             <p>BGV controls noise with <em>modulus switching</em>: the modulus shrinks level-by-level to keep relative noise in check.</p>
-            <p>BFV controls it with a <em>scale-and-rescale</em> style around the plaintext space — the scheme this lab implements, and SEAL's default mode.</p>
+            <p>BFV is instead <em>scale-invariant</em>: the plaintext rides in the high-order bits (&Delta;&nbsp;=&nbsp;&lfloor;q/t&rfloor;) and every multiplication scales the tensor product by <code>t/q</code>, so the noise-to-modulus ratio stays put and no per-level modulus switching is needed. That is the scheme this lab implements, and SEAL's default mode. (<em>Rescaling</em> is CKKS's technique and manages the plaintext scale, not noise alone.)</p>
           </div>
           <div>
             <h3>Four Generations of FHE</h3>
@@ -213,8 +213,9 @@ app.innerHTML = `
       <section class="exhibit" id="exhibit-4" aria-labelledby="e4-heading" tabindex="-1">
         <h2 id="e4-heading">Exhibit 4 · Multiply, Relinearize, and Pack (Batched Add)</h2>
         <p>
-          Multiplying two 2-part ciphertexts yields a <strong>3-part</strong> ciphertext. <em>Relinearization</em> uses a
-          public key-switching key to shrink it back to 2 parts (and rescale it), so you can keep computing.
+          Multiplying two 2-part ciphertexts yields a <strong>3-part</strong> ciphertext. The <code>t/q</code> scaling that
+          returns it to &Delta; happens inside the multiply itself (BFV is scale-invariant); <em>relinearization</em> then uses a
+          public key-switching key to shrink 3 parts back to 2, so you can keep computing.
           Watch the component count and the budget.
         </p>
         <div class="grid-2">
@@ -323,7 +324,7 @@ app.innerHTML = `
         <div class="grid-2">
           <div>
             <h3>Private database queries</h3>
-            <p>BFV-style PIR (Private Information Retrieval) returns a record without revealing which one was requested. Real system: Spiral (Microsoft Research, 2022).</p>
+            <p>BFV-style PIR (Private Information Retrieval) returns a record without revealing which one was requested. Real system: Spiral (Menon &amp; Wu, IEEE S&amp;P 2022).</p>
             <h3>Private genomics</h3>
             <p>BGV/BFV pipelines run GWAS statistical tests over encrypted genotype vectors. Demonstrated yearly in the iDASH competition with HElib BGV.</p>
             <h3>Encrypted ML inference</h3>
@@ -475,7 +476,7 @@ const e2Eq = document.querySelector('[data-e2-eq]') as HTMLElement
     `Δ·m              = ${tr.signal}                 ← the clean "signal"`,
     `c0 + c1·s        = ${tr.recovered}                 ← what the secret key recovers`,
     `noise e          = ${tr.noise >= 0 ? '+' : ''}${tr.noise}                     (fails only if |e| > Δ/2 = ${Math.floor(tr.delta / 2)})`,
-    `round(${tr.recovered} / ${tr.delta}) mod ${t} = ${tr.decoded}   ✓`
+    `round(${tr.recovered} / ${tr.delta}) mod ${t} = ${tr.decoded}   ${tr.decoded === expected ? '✓' : '✗ (expected ' + expected + ')'}`
   ].join('\n')
   e2Reveal.hidden = false
 })
@@ -607,7 +608,9 @@ function resetE3(): void {
   e3History = []
   e3Table.innerHTML = ''
   logE3('Fresh ct(3)')
-  e3DecEl.textContent = 'Decrypt output: 3 (expected 3) — ✓ correct'
+  // Actually decrypt rather than printing a verdict we assumed: a fresh ct(3)
+  // that failed to round-trip must show that, not a hardcoded tick.
+  decryptE3()
   syncE3()
 }
 
@@ -626,8 +629,12 @@ function decryptE3(): void {
   const bits = engine.noiseBudgetBits(e3Ct)
   const expected = e3Ct.message[0]
   const actual = engine.decryptScalar(e3Ct)
-  if (bits > 0) {
+  if (bits > 0 && actual === expected) {
     e3DecEl.textContent = `Decrypt output: ${actual} (expected ${expected}) — ✓ correct, budget intact.`
+  } else if (bits > 0) {
+    // Budget says this should have worked and it did not — report the mismatch
+    // instead of stamping it correct because the meter looked healthy.
+    e3DecEl.textContent = `Decrypt output: ${actual} (expected ${expected}) — ✗ WRONG despite ${bits.toFixed(1)} bits of budget left. That is a bug in this engine, not a property of BFV.`
   } else if (actual === expected) {
     e3DecEl.textContent = `Decrypt output: ${actual} (expected ${expected}) — ✗ budget exhausted. This slot happens to survive, but the ciphertext is corrupted (see the huge max-noise coefficient) and correctness is no longer guaranteed.`
   } else {
@@ -860,7 +867,8 @@ voteGrid.addEventListener('click', (event) => {
   }
   voteTally = voteCts.reduce((acc, ct) => engine.add(acc, ct))
   const bits = engine.noiseBudgetBits(voteTally)
-  voteOut.textContent = `Summed all ${VOTERS} ciphertexts into one tally ciphertext with homomorphic addition. Budget still healthy (${bits.toFixed(1)} bits) — addition is cheap. Now decrypt the tally.`
+  const health = engine.noiseHealth(voteTally)
+  voteOut.textContent = `Summed all ${VOTERS} ciphertexts into one tally ciphertext with homomorphic addition. Measured budget: ${bits.toFixed(1)} bits — ${health}${health === 'healthy' ? ', because addition is cheap' : ''}. Now decrypt the tally.`
 })
 
 ;(document.querySelector('[data-vote-dec]') as HTMLButtonElement).addEventListener('click', () => {
