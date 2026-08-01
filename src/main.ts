@@ -7,7 +7,7 @@ const { q, t } = engine.params
 const app = document.querySelector('#app') as HTMLDivElement
 
 app.innerHTML = `
-  <div class="app">
+  <main class="app" id="main-content" tabindex="-1">
     <div class="app-header">
       <button class="theme-toggle" data-theme-toggle aria-label="Switch to light mode">🌙</button>
       <header class="cl-hero">
@@ -48,7 +48,7 @@ app.innerHTML = `
       </div>
     </div>
 
-    <main class="exhibits" id="main-content" aria-label="Six interactive FHE exhibits">
+    <div class="exhibits">
 
       <section class="exhibit" id="exhibit-1" aria-labelledby="e1-heading" tabindex="-1">
         <h2 id="e1-heading">Exhibit 1 · The Idea: Compute on Locked Boxes</h2>
@@ -358,8 +358,8 @@ app.innerHTML = `
           Understanding noise budgets, parameter selection, and the BGV/BFV tradeoff is what separates engineers who can <em>use</em> FHE from those who only know it exists.
         </div>
       </section>
-    </main>
-  </div>
+    </div>
+  </main>
 `
 
 function getCurrentTheme(): Theme {
