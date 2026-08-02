@@ -6,6 +6,9 @@
   --muted: rgba(232, 245, 240, 0.72);
   --green: #00ffcc;
   --green-soft: rgba(0, 255, 204, 0.35);
+  /* Text-entry control boundaries: >= 3:1 composited vs adjacent surfaces
+     (WCAG 1.4.11). Decorative borders keep --green-soft. */
+  --ctl-border: rgba(0, 255, 204, 0.45);
   --orange: #ff7b45;
   --orange-soft: rgba(255, 123, 69, 0.4);
   --wire: rgba(255, 255, 255, 0.5);
@@ -24,6 +27,7 @@ html[data-theme='light'] {
   --muted: rgba(26, 42, 36, 0.72);
   --green: #0d6f5e;
   --green-soft: rgba(13, 111, 94, 0.35);
+  --ctl-border: rgba(13, 111, 94, 0.75);
   --orange: #bf4f20;
   --orange-soft: rgba(191, 79, 32, 0.4);
   --wire: rgba(7, 7, 15, 0.6);
@@ -250,7 +254,7 @@ input[type='number'],
 textarea {
   width: 100%;
   padding: 0.6rem;
-  border: 1px solid var(--green-soft);
+  border: 1px solid var(--ctl-border);
   background-color: rgba(0, 0, 0, 0.1);
   color: var(--text);
   border-radius: 0;
