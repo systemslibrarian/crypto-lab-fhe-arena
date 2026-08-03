@@ -63,10 +63,12 @@ npm run dev
 
 ```bash
 npm test          # vitest: toy-BFV crypto unit tests (round-trip, add, multiply→relinearize→rescale, noise budget, vote tally)
-npm run test:a11y # Playwright + axe-core WCAG A/AA gate (both themes)
+npm run test:a11y # Playwright: browser claim assertions (e2e/claims.spec.ts) + axe-core WCAG A/AA gate (e2e/a11y.spec.ts, both themes)
 ```
 
-`npm test` runs the crypto unit tests in `src/toyFhe.test.ts` and does **not** collect the Playwright a11y spec in `e2e/`. The tests assert the claims the demo makes on screen: encrypt/decrypt round-trips for every plaintext, homomorphic add and multiply match plaintext arithmetic mod *t*, relinearization shrinks 3→2 components without changing the value, the noise budget is a real measurement (multiply consumes far more than add and eventually reaches 0 bits), encryption is randomized (IND-CPA), and the encrypted vote tally returns the true sum.
+`npm test` runs the crypto unit tests in `src/toyFhe.test.ts` and does **not** collect the Playwright specs in `e2e/`. The tests assert the claims the demo makes on screen: encrypt/decrypt round-trips for every plaintext, homomorphic add and multiply match plaintext arithmetic mod *t*, relinearization shrinks 3→2 components without changing the value, the noise budget is a real measurement (multiply consumes far more than add and eventually reaches 0 bits), encryption is randomized (IND-CPA), and the encrypted vote tally returns the true sum.
+
+`e2e/claims.spec.ts` re-checks those claims in a real browser, against the rendered page: the decryption verdict is recomputed from the integers the test types in (so no baked-in string can pass), the `Δ·m + e` reveal must be internally consistent (Δ = ⌊q/t⌋, signal + noise = what the key recovers, and the decoded answer must be what rounding that recovered value actually yields), the measured-noise column must agree with the budget-in-bits column and with the chart tooltips, the vote tally must equal the Yes chips visible on screen, and every "encrypt this first" / budget-exhausted / stale-ballot path must both reach its failure state and say why.
 
 ## Related Demos
 
