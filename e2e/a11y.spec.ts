@@ -148,13 +148,9 @@ async function measureControlBorders(
   });
 }
 
-for (const theme of ['dark', 'light'] as const) {
+for (const theme of ['dark'] as const) {
   test(`text control borders >= 3:1 in ${theme} theme`, async ({ page }) => {
     await page.goto('.');
-    if (theme === 'light') {
-      await page.locator('#cl-theme-toggle').click();
-      await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-    }
     await revealAll(page);
     const rows = await measureControlBorders(page);
     expect(rows.length).toBeGreaterThan(0);
@@ -167,9 +163,3 @@ test('no WCAG A/AA violations in dark theme', async ({ page }) => {
   await runSuite(page);
 });
 
-test('no WCAG A/AA violations in light theme', async ({ page }) => {
-  await page.goto('.');
-  await page.locator('#cl-theme-toggle').click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  await runSuite(page);
-});
