@@ -40,10 +40,11 @@ app.innerHTML = `
         </ol>
         <p class="legend">
           Noise-budget meter:
-          <span class="legend-chip legend-healthy">healthy</span>
-          <span class="legend-chip legend-warning">running low</span>
-          <span class="legend-chip legend-critical">decryption fails</span>
+          <span class="legend-chip legend-healthy">healthy: ≥ 6 bits</span>
+          <span class="legend-chip legend-warning">running low: ≥ 1.5 and &lt; 6 bits</span>
+          <span class="legend-chip legend-critical">critical: &lt; 1.5 bits</span>
           — measured in <strong>bits</strong>, like Microsoft SEAL's <code>invariant_noise_budget</code>.
+          Labels round to one decimal; colors use the unrounded measurement. At 0 bits, correct decryption is no longer guaranteed.
         </p>
       </div>
     </div>
@@ -413,6 +414,7 @@ function renderBudget(fillSel: string, labelSel: string, ct: InternalCiphertext)
   fill.style.width = `${pct}%`
   bar.setAttribute('aria-valuenow', String(pct))
   bar.setAttribute('data-health', health)
+  bar.setAttribute('data-budget-bits', String(bits))
   const tag = `<span class="health-tag health-${health}">${health}</span>`
   label.innerHTML = `Noise budget: <strong>${bits.toFixed(1)} bits</strong> (${pct}%) — ${tag}`
 }

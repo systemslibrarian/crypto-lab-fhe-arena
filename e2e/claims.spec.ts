@@ -65,8 +65,15 @@ async function readBudget(page: Page, labelSel: string, barSel: string): Promise
   // The ARIA progressbar must report the same percentage the label prints.
   await expect(bar).toHaveAttribute('aria-valuenow', String(budget.pct));
   await expect(bar).toHaveAttribute('data-health', budget.health);
-  // ...and the colour band must match the bits, not be set independently.
-  expect(budget.health).toBe(expectedHealth(budget.bits));
+  // The label is rounded, but threshold decisions use the exact measurement:
+  // e.g. 1.48 displays as 1.5 while correctly remaining critical.
+  const raw = await bar.getAttribute('data-budget-bits');
+  expect(raw).not.toBeNull();
+  const exactBits = Number(raw);
+  expect(Number.isFinite(exactBits)).toBe(true);
+  expect(exactBits).toBeGreaterThanOrEqual(0);
+  expect(budget.bits).toBe(Number(exactBits.toFixed(1)));
+  expect(budget.health).toBe(expectedHealth(exactBits));
   return budget;
 }
 
