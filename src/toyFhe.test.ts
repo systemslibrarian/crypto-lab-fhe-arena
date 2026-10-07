@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { ToyBfvEngine } from './toyFhe'
 
 // These tests guard the claims the demo makes on-screen ("every number is
@@ -118,6 +118,22 @@ describe('homomorphic multiplication + relinearization (the costly operation)', 
 })
 
 describe('noise budget is a real measurement, not a decoration', () => {
+  it.each([
+    [1.48, 'critical'], [1.5, 'warning'], [1.52, 'warning'],
+    [5.98, 'warning'], [6, 'healthy'], [6.02, 'healthy'],
+  ] as const)('classifies the exact %s-bit budget before display rounding', (bits, health) => {
+    const engine = new ToyBfvEngine()
+    const ct = engine.encryptScalar(3)
+    const measurement = vi.spyOn(engine, 'noiseBudgetBits').mockReturnValue(bits)
+    try {
+      expect(engine.noiseHealth(ct)).toBe(health)
+      // The values on either side round to the same label at each threshold.
+      expect(bits.toFixed(1)).toBe(bits < 2 ? '1.5' : '6.0')
+    } finally {
+      measurement.mockRestore()
+    }
+  })
+
   it('a fresh ciphertext has a healthy, positive budget', () => {
     const engine = new ToyBfvEngine()
     const ct = engine.encryptScalar(3)
