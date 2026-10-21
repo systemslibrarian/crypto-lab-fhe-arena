@@ -236,7 +236,7 @@ test('exhibit 2 refuses out-of-order steps and says which step is missing', asyn
   await expect(page.locator('[data-e2-reveal]')).toBeHidden();
 });
 
-test('semantic security demo: two encryptions of one value differ yet both decrypt to it', async ({ page }) => {
+test('randomized encryption demo: two encryptions of one value differ yet both decrypt to it', async ({ page }) => {
   await page.fill('#a2', '11');
   await page.click('[data-e2-sem]');
 

@@ -8,7 +8,7 @@ import { ToyBfvEngine } from './toyFhe'
 //   - homomorphic addition matches plaintext (mod t)
 //   - homomorphic multiply -> relinearize -> rescale matches plaintext (mod t)
 //   - the noise budget is a real, monotonically-consumed measurement
-//   - IND-CPA style randomization (same plaintext -> different ciphertext)
+//   - randomization (same plaintext -> different ciphertext; not an IND-CPA proof)
 //   - the encrypted vote-tally application returns the true sum
 //
 // The engine samples fresh randomness per ciphertext, so any single run could
@@ -187,7 +187,7 @@ describe('noise budget is a real measurement, not a decoration', () => {
   })
 })
 
-describe('semantic security (IND-CPA randomization)', () => {
+describe('randomized encryption (not a security proof)', () => {
   it('encrypting the same value twice yields different ciphertexts that both decrypt correctly', () => {
     const engine = new ToyBfvEngine()
     const a = engine.encryptScalar(9)

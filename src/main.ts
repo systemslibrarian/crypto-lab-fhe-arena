@@ -17,6 +17,7 @@ app.innerHTML = `
           <p class="cl-hero-desc">
             Encrypt integers, add and multiply them on a blind server, then decrypt via Δ·m + e and watch the noise budget shrink until decryption fails.
           </p>
+          <p class="cl-hero-desc"><strong>Teaching parameters: n=64, t=17, q=65537; insecure randomness. This browser models both parties and provides no production FHE security.</strong></p>
         </div>
         <aside class="cl-hero-why" aria-label="Why it matters">
           <span class="cl-hero-why-label">WHY IT MATTERS</span>
@@ -141,13 +142,14 @@ app.innerHTML = `
           <pre class="mono reveal-eq" data-e2-eq role="region" aria-live="polite" aria-label="Decryption equation with live values"></pre>
         </div>
         <div class="semantic">
-          <h3>Semantic security: same input, different ciphertext</h3>
+          <h3>Randomized encryption: same input, different ciphertext</h3>
           <p>
-            Encryption is <em>randomized</em>. Encrypt the same value twice and the two ciphertexts look completely
-            unrelated — yet both decrypt to the same number. That is exactly what IND-CPA security guarantees: a
-            ciphertext leaks nothing about its plaintext, not even whether it equals another ciphertext.
+            Encrypt the same value twice: the ciphertexts differ, yet both decrypt to the same number.
+            This shows <em>randomization</em>, not a proof of semantic security. IND-CPA security asks whether
+            an efficient attacker can distinguish encryptions of chosen equal-length messages. Different
+            ciphertexts alone do not establish that guarantee, and this insecure toy does not provide it.
           </p>
-          <div class="row" role="toolbar" aria-label="Semantic security demo">
+          <div class="row" role="toolbar" aria-label="Randomized encryption demo">
             <button class="action" data-e2-sem>Encrypt A twice</button>
           </div>
           <div class="grid-2">
