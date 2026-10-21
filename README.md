@@ -36,6 +36,8 @@ Six exhibits: the core idea (compute on locked boxes, with a client/server trust
 
 ## What Can Go Wrong
 
+- **Decryption-feedback research — 20 October 2026.** Ordinary encryption security (IND-CPA), correct decryption, and security when an adversary learns computation results (IND-CPA-D) are different guarantees. Choe, Kang and Stehlé report attacks on particular BFV/BGV configurations using heuristic correctness assumptions, with experiments in OpenFHE and HElib. Crafted operations can exceed heuristic noise bounds; two attacks recover keys, while a third breaks indistinguishability. Parameter tables and noise estimates alone do not establish security in this feedback model. This browser lab does not reproduce those attacks or establish that its implementation is vulnerable. [Choe, Kang and Stehlé, *New IND-CPA-D Attacks on BFV and BGV*, ePrint 2026/2546](https://eprint.iacr.org/2026/2546), received 19 October and revised 20 October 2026; accepted to ACM CCS 2026. **Demonstrated results; attack-model-conditional.**
+
 - **Noise budget exhaustion.** Every homomorphic operation grows ciphertext noise; exceed the budget and decryption silently returns garbage. Multiplicative depth must be planned before the circuit is built.
 - **Wrong scheme for the data.** BGV/BFV are integer schemes. Forcing real-valued or approximate workloads onto them gives poor results — CKKS exists for that, with its own approximation caveats.
 - **Insecure parameter selection.** Polynomial degree and modulus must follow the Homomorphic Encryption Standard; ad-hoc parameters can drop below the claimed security level or fail to support the intended depth.
@@ -82,3 +84,4 @@ npm run test:a11y # Playwright: browser claim assertions (e2e/claims.spec.ts) + 
 *Part of the [Crypto Lab](https://crypto-lab.systemslibrarian.dev/) suite.*
 
 *"So whether you eat or drink or whatever you do, do it all for the glory of God." — 1 Corinthians 10:31*
+

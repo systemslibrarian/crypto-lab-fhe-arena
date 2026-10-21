@@ -209,6 +209,13 @@ app.innerHTML = `
           When levels run out, only <em>bootstrapping</em> — homomorphically decrypting to refresh the budget — lets computation continue.
           Press <strong>♻ Bootstrap</strong> to watch the budget snap back to full. The honest caveat: real bootstrapping runs <em>without</em> the secret key (that is what makes it so expensive) and must happen <em>before</em> the budget hits 0 — it refreshes noise, it cannot recover data already destroyed by overflow.
         </div>
+        <div class="callout" role="note" id="decryption-feedback-research">
+          <strong>Research update — 20 October 2026: when decryption results leak.</strong>
+          <p>Ordinary encryption security (IND-CPA), correct decryption, and security when an adversary learns computation results (IND-CPA-D) are different guarantees. Choe, Kang and Stehlé report attacks on particular BFV/BGV configurations using heuristic correctness assumptions, with experiments in OpenFHE and HElib. Crafted operations can exceed heuristic noise bounds; two attacks recover keys, while a third breaks indistinguishability. Parameter tables and noise estimates alone do not establish security in this feedback model. This browser lab does not reproduce those attacks or establish that its implementation is vulnerable.</p>
+          <p>Source: <a href="https://eprint.iacr.org/2026/2546">New IND-CPA-D Attacks on BFV and BGV</a>
+          (received 19 October; revised 20 October 2026; accepted to ACM CCS 2026).
+          Demonstrated results under specific attack-model conditions.</p>
+        </div>
       </section>
 
       <section class="exhibit" id="exhibit-4" aria-labelledby="e4-heading" tabindex="-1">
@@ -322,6 +329,7 @@ app.innerHTML = `
 
       <section class="exhibit" id="exhibit-6" aria-labelledby="e6-heading" tabindex="-1">
         <h2 id="e6-heading">Exhibit 6 · FHE in Production</h2>
+        <p>Deployment boundary: exposing decrypted results or failure feedback requires a separate security analysis. See the <a href="#decryption-feedback-research">BFV/BGV research note</a>.</p>
         <div class="grid-2">
           <div>
             <h3>Private database queries</h3>
@@ -884,3 +892,4 @@ voteGrid.addEventListener('click', (event) => {
 })
 
 resetE3()
+
