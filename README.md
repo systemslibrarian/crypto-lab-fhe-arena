@@ -85,3 +85,7 @@ npm run test:a11y # Playwright: browser claim assertions (e2e/claims.spec.ts) + 
 
 *"So whether you eat or drink or whatever you do, do it all for the glory of God." — 1 Corinthians 10:31*
 
+
+## Research scope review — November 2026
+
+The research workbench adds four bounded exercises: actual toy-BFV server substitution with local recomputation (not a proof); a synthetic complete-cost/occupancy worksheet; separate modular-wrap, controlled phase-error, fixed-point precision and depth-allocation examples; and plaintext traces of printed sorting pseudocode with proposed repairs. Sources: PEEV https://eprint.iacr.org/2026/1871 (CL3232); CKKS precision allocation (CL3233); https://eprint.iacr.org/2026/2368 (CL3234); https://eprint.iacr.org/2026/1495 (CL3235, Algorithms 1/9/16/18). No PEEV, specialized CKKS method or encrypted sorting implementation is claimed. Tests exhaustively cover sorting repairs over all arrays of length 0–4 with values 0–3 and actual toy-BFV substitution over all UI inputs. Tied upper ranks remain valid for sorting value/rank pairs; they are not unique scatter destinations. The authors’ executables and benchmark results were not tested.

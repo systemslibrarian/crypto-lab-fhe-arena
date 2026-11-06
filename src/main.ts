@@ -1,4 +1,5 @@
 import './style.css'
+import { researchHtml, wireResearch } from './research-ui'
 import { ToyBfvEngine, type InternalCiphertext } from './toyFhe'
 import type { Theme } from './types'
 
@@ -38,6 +39,7 @@ app.innerHTML = `
           <li><a href="#exhibit-4">Multiply &amp; relinearize</a> — ciphertexts grow, then shrink; coefficient packing.</li>
           <li><a href="#exhibit-5">BGV vs BFV vs TFHE</a> — pick the right scheme.</li>
           <li><a href="#exhibit-6">In production</a> — where this is deployed today.</li>
+          <li><a href="#research-workbench">Research workbench</a> — integrity, total cost, correctness and sorting.</li>
         </ol>
         <p class="legend">
           Noise-budget meter:
@@ -370,6 +372,7 @@ app.innerHTML = `
           Understanding noise budgets, parameter selection, and the BGV/BFV tradeoff is what separates engineers who can <em>use</em> FHE from those who only know it exists.
         </div>
       </section>
+      ${researchHtml}
     </div>
   </main>
 `
@@ -895,3 +898,5 @@ voteGrid.addEventListener('click', (event) => {
 
 resetE3()
 
+
+wireResearch(engine)

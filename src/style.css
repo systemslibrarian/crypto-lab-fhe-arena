@@ -722,3 +722,18 @@ html[data-theme='light'] a:not(.cl-topbar a) {
     border: 2px solid CanvasText;
   }
 }
+
+/* Research controls inherit both theme palettes and wrap on narrow screens. */
+#research-workbench select {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--ctl-border);
+  padding: .6rem;
+  min-height: 44px;
+  max-width: 100%;
+}
+#research-workbench .row > label { flex: 1 1 12rem; min-width: 0; }
+#research-workbench input[type='checkbox'] { min-width: 24px; min-height: 24px; vertical-align: middle; }
+#research-trace { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
+#research-workbench h3 { margin-top: 2rem; }
