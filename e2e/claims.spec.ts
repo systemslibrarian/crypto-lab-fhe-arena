@@ -583,6 +583,45 @@ test('parameter explorer: every stop is internally consistent and monotone', asy
   }
 });
 
+/** Park the explorer on a given degree and read back the figures it prints. */
+async function explorerStop(page: Page, wantN: number): Promise<{ logQ: number; depth: number }> {
+  const slider = page.locator('[data-param-n]');
+  const max = Number(await slider.getAttribute('max'));
+  for (let i = 0; i <= max; i += 1) {
+    await slider.fill(String(i));
+    await slider.dispatchEvent('input');
+    const n = Number((await textOf(page, '[data-param-n-label]')).replace(/,/g, ''));
+    if (n !== wantN) continue;
+    const card = await textOf(page, '[data-param-out]');
+    return {
+      logQ: Number(card.match(/security\s*(\d+) bits/)![1]),
+      depth: Number(card.match(/depth\s*≈ (\d+) level/)![1]),
+    };
+  }
+  throw new Error(`parameter explorer has no n = ${wantN} stop`);
+}
+
+// The exhibit 3 callout used to promise "~100+ bits of budget — enough for
+// 10–30 multiplications" at n ≥ 4096, which the explorer's own 25-bits-a-level
+// rule contradicts at that degree. Pin the prose to the explorer's numbers.
+test('exhibit 3 prose quotes the depths the parameter explorer computes', async ({ page }) => {
+  const small = await explorerStop(page, 4096);
+  const large = await explorerStop(page, 16384);
+  const callout = norm(
+    await page.locator('#exhibit-3 .callout', { hasText: 'Modulus switching' }).textContent()
+  );
+
+  expect(callout).toContain(`log₂(q) = ${small.logQ} bits`);
+  expect(callout).toContain(`about ${small.depth} levels`);
+  expect(callout).toContain(`n = 16384 (log₂(q) = ${large.logQ} bits)`);
+  expect(callout).toContain(`about ${large.depth} levels`);
+
+  // n = 4096 is nowhere near a 10–30 level budget; n = 16384 is the stop that is.
+  expect(small.depth).toBeLessThan(10);
+  expect(large.depth).toBeGreaterThanOrEqual(10);
+  expect(large.depth).toBeLessThanOrEqual(30);
+});
+
 // ── Exhibit 6: the encrypted vote tally ────────────────────────────────────
 
 /** Ballot state straight off the chips: {yes, no, total} plus the aria mirror. */

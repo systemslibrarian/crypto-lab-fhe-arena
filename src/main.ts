@@ -209,7 +209,7 @@ app.innerHTML = `
         </div>
         <div class="callout" role="note">
           <strong>Modulus switching (BGV) &amp; scale invariance (BFV)</strong> rein in noise after each multiplication so more levels fit before exhaustion. BGV drops to a smaller modulus level by level; BFV instead keeps the plaintext in the high-order bits (&Delta;&nbsp;=&nbsp;&lfloor;q/t&rfloor;), holding the noise-to-modulus ratio steady without per-level switching. <em>Rescaling</em> is CKKS's technique, and it manages the plaintext scale rather than noise alone.
-          A production ciphertext (n&nbsp;≥&nbsp;4096, large q) starts with ~100+ bits of budget — enough for 10–30 multiplications.
+          A production ciphertext at n&nbsp;=&nbsp;4096 is capped at <code>log₂(q)</code>&nbsp;=&nbsp;109 bits, and at roughly 25 bits a multiplication that is about 3 levels — the depth the Exhibit 5 parameter explorer prints for that degree. The 10–30 multiplications a deep circuit needs take a larger degree: n&nbsp;=&nbsp;16384 (<code>log₂(q)</code>&nbsp;=&nbsp;438 bits) scores about 16 levels.
           When levels run out, only <em>bootstrapping</em> — homomorphically decrypting to refresh the budget — lets computation continue.
           Press <strong>♻ Bootstrap</strong> to watch the budget snap back to full. The honest caveat: real bootstrapping runs <em>without</em> the secret key (that is what makes it so expensive) and must happen <em>before</em> the budget hits 0 — it refreshes noise, it cannot recover data already destroyed by overflow.
         </div>
