@@ -714,3 +714,20 @@ test('editing a ballot invalidates the encrypted state instead of tallying stale
   await page.click('[data-vote-dec]');
   expect(await textOf(page, '[data-vote-out]')).toBe('Tally the ciphertexts first.');
 });
+
+// ── Exhibit 6: the production claims ───────────────────────────────────────
+
+// The "private database queries" card used to call Spiral "BFV-style PIR".
+// Spiral composes Regev and Gentry-Sahai-Waters, not BFV — Menon & Wu,
+// "Spiral: Fast, High-Rate Single-Server PIR via FHE Composition", IEEE S&P
+// 2022 (ePrint 2022/368, read 15 November 2026).
+test('the Spiral card names the schemes Spiral actually composes', async ({ page }) => {
+  const card = page.locator('#exhibit-6 .grid-2 > div').first();
+  const text = norm(await card.textContent());
+
+  expect(text).toContain('Regev and Gentry-Sahai-Waters');
+  expect(text).toContain('Spiral: Fast, High-Rate Single-Server PIR via FHE Composition');
+  // The paper's own composition is not BFV, so the card must not file it there.
+  expect(text).not.toContain('BFV-style PIR');
+  await expect(card.locator('a[href="https://eprint.iacr.org/2022/368"]')).toHaveCount(1);
+});

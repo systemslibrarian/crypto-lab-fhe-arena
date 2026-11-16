@@ -337,7 +337,7 @@ app.innerHTML = `
         <div class="grid-2">
           <div>
             <h3>Private database queries</h3>
-            <p>BFV-style PIR (Private Information Retrieval) returns a record without revealing which one was requested. Real system: Spiral (Menon &amp; Wu, IEEE S&amp;P 2022).</p>
+            <p>PIR (Private Information Retrieval) returns a record without revealing which one was requested. Real system: Spiral, which composes two lattice-based homomorphic encryption schemes &mdash; Regev and Gentry-Sahai-Waters &mdash; rather than BFV (Menon &amp; Wu, <a href="https://eprint.iacr.org/2022/368">Spiral: Fast, High-Rate Single-Server PIR via FHE Composition</a>, IEEE S&amp;P 2022, pp. 930&ndash;947).</p>
             <h3>Private genomics</h3>
             <p>BGV/BFV pipelines run GWAS statistical tests over encrypted genotype vectors. Demonstrated yearly in the iDASH competition with HElib BGV.</p>
             <h3>Encrypted ML inference</h3>
