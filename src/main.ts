@@ -139,7 +139,7 @@ app.innerHTML = `
           <p>
             Decryption computes <code>c0 + c1·s</code>, which equals <code>Δ·m + e</code> — your message <code>m</code>
             scaled by <code>Δ = ⌊q/t⌋</code>, plus tiny noise <code>e</code>. Divide by <code>Δ</code>, round, and the noise vanishes.
-            Decryption only fails once <code>|e|</code> exceeds <code>Δ/2</code>.
+            Adjacent encoded integers are spaced by <code>Δ</code> before modular reduction. Compare the noise with half that spacing, then check the value the decoder actually returns.
           </p>
           <pre class="mono reveal-eq" data-e2-eq role="region" aria-live="polite" aria-label="Decryption equation with live values"></pre>
         </div>
@@ -265,11 +265,11 @@ app.innerHTML = `
         </div>
         <div class="grid-2">
           <div>
-            <label for="batch-a">Batch A</label>
+            <label for="batch-a">Batch A (1–4 integers, 0–${t - 1})</label>
             <textarea id="batch-a" data-e4-batch-a rows="2">1,2,3,4</textarea>
           </div>
           <div>
-            <label for="batch-b">Batch B</label>
+            <label for="batch-b">Batch B (same number of slots as A)</label>
             <textarea id="batch-b" data-e4-batch-b rows="2">5,6,7,8</textarea>
           </div>
         </div>
@@ -399,21 +399,38 @@ themeToggleBtn.addEventListener('click', () => {
   setTheme(getCurrentTheme() === 'dark' ? 'light' : 'dark')
 })
 
-function numFrom(id: string): number {
-  const el = document.getElementById(id) as HTMLInputElement
-  const num = Number(el.value)
-  return Number.isFinite(num) ? Math.max(0, Math.min(t - 1, Math.round(num))) : 0
+const scalarHint = `Enter a whole number from 0 to ${t - 1}.`
+
+function numFrom(id: string): number | null {
+  const input = document.getElementById(id) as HTMLInputElement
+  const value = input.valueAsNumber
+  const valid = Number.isInteger(value) && value >= 0 && value < t
+  input.setAttribute('aria-invalid', String(!valid))
+  return valid ? value : null
 }
 
-function parseVec(value: string): number[] {
-  return value
-    .split(',')
-    .map((x) => x.trim())
-    .filter((x) => x.length > 0)
-    .map(Number)
-    .filter((x) => Number.isFinite(x))
-    .slice(0, 4)
-    .map((x) => ((Math.round(x) % t) + t) % t)
+function readBatch(id: string): number[] | null {
+  const field = document.getElementById(id) as HTMLTextAreaElement
+  const tokens = field.value.split(',').map(token => token.trim())
+  const valid = tokens.length <= 4 && tokens.every(token => /^\d+$/.test(token) && Number(token) < t)
+  field.setAttribute('aria-invalid', String(!valid))
+  if (!valid) {
+    batchOut.textContent = tokens.some(token => /^\d+$/.test(token))
+      ? `Enter one to four comma-separated integers from 0 to ${t - 1} in each batch. Every slot needs a value.`
+      : `Enter at least one integer (0–${t - 1}) in each batch first.`
+    return null
+  }
+  return tokens.map(Number)
+}
+
+function clearBudget(panel: 'e2' | 'e4'): void {
+  const fill = document.querySelector(`[data-${panel}-budget]`) as HTMLElement
+  const bar = fill.parentElement!
+  bar.removeAttribute('aria-valuenow')
+  bar.removeAttribute('data-health')
+  bar.removeAttribute('data-budget-bits')
+  fill.style.width = '0%'
+  document.querySelector(`[data-${panel}-budget-label]`)!.textContent = 'Noise budget awaiting a ciphertext.'
 }
 
 /** Shared noise-budget meter renderer: bits + percent + health color. */
@@ -450,18 +467,50 @@ const e2Result = document.querySelector('[data-e2-result]') as HTMLElement
 const e2Reveal = document.querySelector('[data-e2-reveal]') as HTMLElement
 const e2Eq = document.querySelector('[data-e2-eq]') as HTMLElement
 
+function retireSum(): void {
+  e2Sum = null
+  e2SumEl.textContent = 'awaiting…'
+  e2Reveal.hidden = true
+  e2Eq.textContent = ''
+}
+
+for (const id of ['a2', 'b2']) {
+  document.getElementById(id)!.addEventListener('input', () => {
+    document.getElementById(id)!.removeAttribute('aria-invalid')
+    if (id === 'a2') {
+      e2A = null
+      e2Cta.textContent = 'awaiting…'
+      e2Sem1.textContent = e2Sem2.textContent = '—'
+      e2SemNote.textContent = ''
+    } else {
+      e2B = null
+      e2Ctb.textContent = 'awaiting…'
+    }
+    retireSum()
+    clearBudget('e2')
+    e2Result.textContent = 'Input changed. Encrypt the edited value before adding.'
+  })
+}
+clearBudget('e2')
+
 ;(document.querySelector('[data-e2-enc-a]') as HTMLButtonElement).addEventListener('click', () => {
-  e2A = engine.encryptScalar(numFrom('a2'))
+  const value = numFrom('a2')
+  retireSum()
+  if (value === null) { e2Result.textContent = scalarHint; return }
+  e2A = engine.encryptScalar(value)
   e2Cta.textContent = engine.formatCipher(e2A)
   renderBudget('[data-e2-budget]', '[data-e2-budget-label]', e2A)
-  e2Result.textContent = `Encrypted A = ${numFrom('a2')}. The ciphertext above is two random-looking polynomials.`
+  e2Result.textContent = `Encrypted A = ${value}. The ciphertext above is two random-looking polynomials.`
 })
 
 ;(document.querySelector('[data-e2-enc-b]') as HTMLButtonElement).addEventListener('click', () => {
-  e2B = engine.encryptScalar(numFrom('b2'))
+  const value = numFrom('b2')
+  retireSum()
+  if (value === null) { e2Result.textContent = scalarHint; return }
+  e2B = engine.encryptScalar(value)
   e2Ctb.textContent = engine.formatCipher(e2B)
   renderBudget('[data-e2-budget]', '[data-e2-budget-label]', e2B)
-  e2Result.textContent = `Encrypted B = ${numFrom('b2')}. Now add the two ciphertexts.`
+  e2Result.textContent = `Encrypted B = ${value}. Now add the two ciphertexts.`
 })
 
 ;(document.querySelector('[data-e2-add]') as HTMLButtonElement).addEventListener('click', () => {
@@ -482,6 +531,7 @@ const e2Eq = document.querySelector('[data-e2-eq]') as HTMLElement
   }
   const a = numFrom('a2')
   const b = numFrom('b2')
+  if (a === null || b === null) { e2Result.textContent = scalarHint; return }
   const tr = engine.decryptionTrace(e2Sum)
   const expected = (a + b) % t
   e2Result.innerHTML = `Decrypted: <strong>${tr.decoded}</strong> &nbsp; verify (${a} + ${b}) mod ${t} = ${expected} &nbsp; ${verdictBadge(tr.decoded === expected)}`
@@ -490,7 +540,7 @@ const e2Eq = document.querySelector('[data-e2-eq]') as HTMLElement
     `m                = (${a} + ${b}) mod ${t} = ${tr.m}`,
     `Δ·m              = ${tr.signal}                 ← the clean "signal"`,
     `c0 + c1·s        = ${tr.recovered}                 ← what the secret key recovers`,
-    `noise e          = ${tr.noise >= 0 ? '+' : ''}${tr.noise}                     (fails only if |e| > Δ/2 = ${Math.floor(tr.delta / 2)})`,
+    `noise e          = ${tr.noise >= 0 ? '+' : ''}${tr.noise}                     (half the encoding spacing: Δ/2 = ${tr.delta / 2})`,
     `round(${tr.recovered} / ${tr.delta}) mod ${t} = ${tr.decoded}   ${tr.decoded === expected ? '✓' : '✗ (expected ' + expected + ')'}`
   ].join('\n')
   e2Reveal.hidden = false
@@ -502,6 +552,7 @@ const e2SemNote = document.querySelector('[data-e2-sem-note]') as HTMLElement
 
 ;(document.querySelector('[data-e2-sem]') as HTMLButtonElement).addEventListener('click', () => {
   const v = numFrom('a2')
+  if (v === null) { e2SemNote.textContent = scalarHint; return }
   const c1 = engine.encryptScalar(v)
   const c2 = engine.encryptScalar(v)
   e2Sem1.textContent = engine.formatCipher(c1)
@@ -705,9 +756,23 @@ function syncE4(ct: InternalCiphertext, note: string): void {
   renderBudget('[data-e4-budget]', '[data-e4-budget-label]', ct)
 }
 
+for (const id of ['a4', 'b4']) {
+  document.getElementById(id)!.addEventListener('input', () => {
+    document.getElementById(id)!.removeAttribute('aria-invalid')
+    e4A = e4B = e4Mul = null
+    e4Ct.textContent = 'awaiting…'
+    e4Info.textContent = 'Inputs changed. Encrypt both values before multiplying.'
+    clearBudget('e4')
+  })
+}
+clearBudget('e4')
+
 ;(document.querySelector('[data-e4-enc]') as HTMLButtonElement).addEventListener('click', () => {
-  e4A = engine.encryptScalar(numFrom('a4'))
-  e4B = engine.encryptScalar(numFrom('b4'))
+  const a = numFrom('a4')
+  const b = numFrom('b4')
+  if (a === null || b === null) { e4Info.textContent = scalarHint; return }
+  e4A = engine.encryptScalar(a)
+  e4B = engine.encryptScalar(b)
   e4Mul = null
   syncE4(e4A, 'fresh ciphertexts have 2 parts (c0, c1). Now multiply.')
 })
@@ -742,6 +807,7 @@ function syncE4(ct: InternalCiphertext, note: string): void {
   const out = engine.decryptScalar(e4Mul)
   const a = numFrom('a4')
   const b = numFrom('b4')
+  if (a === null || b === null) { e4Info.textContent = scalarHint; return }
   const expected = (a * b) % t
   e4Info.innerHTML = `Components: <strong>${e4Mul.components.length}</strong> · decrypted <strong>${out}</strong> · verify (${a} × ${b}) mod ${t} = ${expected} &nbsp; ${verdictBadge(out === expected)}`
 })
@@ -754,14 +820,25 @@ const batchOut = document.querySelector('[data-e4-batch-out]') as HTMLElement
 
 let batchLen = 0
 
+for (const id of ['batch-a', 'batch-b']) {
+  document.getElementById(id)!.addEventListener('input', () => {
+    document.getElementById(id)!.removeAttribute('aria-invalid')
+    batchA = batchB = batchSum = null
+    batchLen = 0
+    batchOut.textContent = 'Batch changed. Encrypt the batches before adding.'
+  })
+}
+
 ;(document.querySelector('[data-e4-batch-enc]') as HTMLButtonElement).addEventListener('click', () => {
-  const va = parseVec((document.querySelector('[data-e4-batch-a]') as HTMLTextAreaElement).value)
-  const vb = parseVec((document.querySelector('[data-e4-batch-b]') as HTMLTextAreaElement).value)
-  if (va.length === 0 || vb.length === 0) {
-    batchOut.textContent = `Enter at least one integer (0–${t - 1}) in each batch first.`
+  const va = readBatch('batch-a')
+  if (!va) return
+  const vb = readBatch('batch-b')
+  if (!vb) return
+  if (va.length !== vb.length) {
+    batchOut.textContent = 'Give both batches the same number of slots before adding.'
     return
   }
-  batchLen = Math.min(va.length, vb.length)
+  batchLen = va.length
   batchA = engine.encryptVector(va)
   batchB = engine.encryptVector(vb)
   batchSum = null

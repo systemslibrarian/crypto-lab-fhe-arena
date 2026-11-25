@@ -18,6 +18,9 @@ FHE Arena runs a live toy of **BFV** (Brakerski; Fan-Vercauteren, 2012) — one 
 
 ## Live Demo
 
+The scalar controls accept whole numbers from 0 through 16. Editing either operand retires the affected ciphertext and result. The packing exercise takes two equally long lists of one to four such integers and preserves each slot’s position.
+
+
 **[systemslibrarian.github.io/crypto-lab-fhe-arena](https://systemslibrarian.github.io/crypto-lab-fhe-arena/)**
 
 Every number in the demo is computed by a real (toy-parameter) BFV engine over genuine negacyclic ring arithmetic — nothing is faked. The lab is built to *teach*, so the hidden machinery is made visible:

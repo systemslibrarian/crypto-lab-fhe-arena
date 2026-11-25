@@ -161,7 +161,7 @@ test('exhibit 2 reveals a Δ·m + e equation whose parts sum to the recovered va
   const mLine = eq.match(/m\s+= \((\d+) \+ (\d+)\) mod (\d+) = (\d+)/);
   const signalLine = eq.match(/Δ·m\s+= (-?\d+)/);
   const recoveredLine = eq.match(/c0 \+ c1·s\s+= (-?\d+)/);
-  const noiseLine = eq.match(/noise e\s+= ([+-]?\d+)\s+\(fails only if \|e\| > Δ\/2 = (\d+)\)/);
+  const noiseLine = eq.match(/noise e\s+= ([+-]?\d+)\s+\(half the encoding spacing: Δ\/2 = (\d+(?:\.\d+)?)\)/);
   const roundLine = eq.match(/round\((-?\d+) \/ (\d+)\) mod (\d+) = (\d+)/);
   for (const [name, m] of Object.entries({ deltaLine, mLine, signalLine, recoveredLine, noiseLine, roundLine })) {
     expect(m, `${name} missing from the reveal:\n${eq}`).not.toBeNull();
@@ -179,14 +179,14 @@ test('exhibit 2 reveals a Δ·m + e equation whose parts sum to the recovered va
 
   // Δ = ⌊q/t⌋, exactly as the line claims.
   expect(delta).toBe(Math.floor(q / t));
-  expect(threshold).toBe(Math.floor(delta / 2));
+  expect(threshold).toBe(delta / 2);
   // m is the plaintext sum the test asked for.
   expect(m).toBe((a + b) % t);
   // The clean signal really is Δ·m (center-lifted into (-q/2, q/2]).
   expect(signal).toBe(centerLift(m * delta, q));
   // The whole point of the exhibit: signal + noise === what the key recovers.
   expect(centerLift(recovered - signal - noise, q)).toBe(0);
-  // A successful decryption must sit inside the failure threshold it prints.
+  // This fresh, correctly decoded example has noise below half the encoding spacing.
   expect(Math.abs(noise)).toBeLessThanOrEqual(threshold);
   // The final rounding line must operate on the same recovered value and Δ...
   expect(Number(roundLine![1])).toBe(recovered);
@@ -730,4 +730,44 @@ test('the Spiral card names the schemes Spiral actually composes', async ({ page
   // The paper's own composition is not BFV, so the card must not file it there.
   expect(text).not.toContain('BFV-style PIR');
   await expect(card.locator('a[href="https://eprint.iacr.org/2022/368"]')).toHaveCount(1);
+});
+
+test('editing a scalar retires its ciphertext and clears the previous noise verdict', async ({ page }) => {
+  await page.locator('#a2').fill('2');
+  await page.locator('#b2').fill('3');
+  for (const action of ['enc-a', 'enc-b', 'add', 'dec']) await page.click(`[data-e2-${action}]`);
+  await expect(page.locator('[data-e2-result]')).toContainText('mod 17 = 5');
+  await page.locator('#a2').fill('4');
+  await expect(page.locator('[data-e2-reveal]')).toBeHidden();
+  await expect(page.locator('[data-e2-budget-bar]')).not.toHaveAttribute('aria-valuenow', /.+/);
+  await page.click('[data-e2-dec]');
+  await expect(page.locator('[data-e2-result]')).toHaveText('Add the ciphertexts first.');
+  for (const raw of ['', '-1', '2.5', '17']) {
+    await page.locator('#a2').fill(raw);
+    await page.click('[data-e2-enc-a]');
+    await expect(page.locator('#a2')).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.locator('[data-e2-result]')).toHaveText('Enter a whole number from 0 to 16.');
+  }
+  await page.locator('#a2').fill('0');
+  await page.click('[data-e2-enc-a]');
+  await page.click('[data-e2-add]');
+  await page.click('[data-e2-dec]');
+  await expect(page.locator('[data-e2-result]')).toContainText('mod 17 = 3');
+});
+
+test('batch slots cannot be silently removed, rounded or truncated', async ({ page }) => {
+  await page.locator('#batch-b').fill('1,1');
+  for (const raw of ['2,oops,4', '1,,2', '1.5,3', '1,2,3,4,5', '-1,3', '17,3', '1']) {
+    await page.locator('#batch-a').fill(raw);
+    await page.click('[data-e4-batch-enc]');
+    await expect(page.locator('[data-e4-batch-out]')).not.toContainText('Encrypted A');
+    await page.click('[data-e4-batch-add]');
+    await expect(page.locator('[data-e4-batch-out]')).toHaveText('Encrypt both batches first.');
+  }
+  await page.locator('#batch-a').fill('0,16');
+  for (const action of ['enc','add','dec']) await page.click(`[data-e4-batch-${action}]`);
+  await expect(page.locator('[data-e4-batch-out]')).toContainText('[1, 0]');
+  await page.locator('#batch-b').fill('2,1');
+  await page.click('[data-e4-batch-dec]');
+  await expect(page.locator('[data-e4-batch-out]')).toHaveText('Add the batches first.');
 });
