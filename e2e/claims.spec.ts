@@ -360,31 +360,19 @@ test('"multiply until it breaks" reaches 0 bits and explains the failure', async
   expect(decrypt).toMatch(/the noise overflowed and the result is garbage|correctness is no longer guaranteed/);
 });
 
-test('bootstrap restores an exhausted budget to full and decryption works again', async ({ page }) => {
+test('trusted refresh needs a positive budget and preserves the decrypted value', async ({ page }) => {
+  const refresh = page.locator('[data-e3-boot]');
+  await page.click('[data-e3-add]');
+  await refresh.click();
+  await expect(page.locator('[data-e3-ops]')).toContainText('add → trusted refresh');
+  await page.click('[data-e3-dec]');
+  await expect(page.locator('[data-e3-decrypt]')).toContainText('Decrypt output: 4 (expected 4)');
   await page.click('[data-e3-auto]');
   await expect(page.locator('[data-e3-auto]')).toBeEnabled({ timeout: 60_000 });
-  const broken = await readBudget(page, '[data-e3-budget-label]', '[data-e3-budget-bar]');
-  expect(broken.bits).toBe(0);
-  const rowsBefore = await readNoiseTable(page);
-
-  await page.click('[data-e3-boot]');
-  const refreshed = await readBudget(page, '[data-e3-budget-label]', '[data-e3-budget-bar]');
-  expect(refreshed.pct).toBe(100);
-  expect(refreshed.health).toBe('healthy');
-  expect(refreshed.bits).toBeGreaterThan(broken.bits);
-
-  const rowsAfter = await readNoiseTable(page);
-  expect(rowsAfter).toHaveLength(rowsBefore.length + 1);
-  expect(rowsAfter[rowsAfter.length - 1].op).toContain('Bootstrap');
-  expect(rowsAfter[rowsAfter.length - 1].guaranteed).toBe(true);
-  expect(await textOf(page, '[data-e3-ops]')).toMatch(/→ bootstrap$/);
-
-  await page.click('[data-e3-dec]');
-  const decrypt = await textOf(page, '[data-e3-decrypt]');
-  expect(decrypt).toContain('✓ correct, budget intact');
-  const values = decrypt.match(/Decrypt output: (\d+) \(expected (\d+)\)/);
-  expect(values).not.toBeNull();
-  expect(values![1]).toBe(values![2]);
+  expect((await readBudget(page, '[data-e3-budget-label]', '[data-e3-budget-bar]')).bits).toBe(0);
+  await expect(refresh).toBeDisabled();
+  await page.click('[data-e3-reset]');
+  await expect(refresh).toBeEnabled();
 });
 
 test('reset returns exhibit 3 to a single fresh, correct ciphertext', async ({ page }) => {
@@ -560,7 +548,7 @@ test('parameter explorer: every stop is internally consistent and monotone', asy
 
     const n = Number((await textOf(page, '[data-param-n-label]')).replace(/,/g, ''));
     const card = await textOf(page, '[data-param-out]');
-    const logQ = Number(card.match(/security\s*(\d+) bits/)![1]);
+    const logQ = Number(card.match(/profile\s*(\d+) bits/)![1]);
     const depth = Number(card.match(/depth\s*≈ (\d+) level/)![1]);
     const speed = card.match(/Speed\s*(very fast|fast|moderate|slow|very slow)$/)![1];
 
@@ -570,7 +558,7 @@ test('parameter explorer: every stop is internally consistent and monotone', asy
     expect(card).toContain(depth === 1 ? '1 level' : `${depth} levels`);
     // The screen-reader value must quote the same three numbers as the card.
     const valueText = norm(await slider.getAttribute('aria-valuetext'));
-    expect(valueText).toBe(`n = ${n}, max log2 q = ${logQ} bits, about ${depth} multiplication levels, ${speed}`);
+    expect(valueText).toBe(`n = ${n}, profile bound log2 q = ${logQ} bits, about ${depth} multiplication levels, ${speed}`);
 
     // Larger degree ⇒ larger modulus ⇒ more depth. That is the whole tradeoff.
     expect(n).toBeGreaterThan(prevN);
@@ -594,7 +582,7 @@ async function explorerStop(page: Page, wantN: number): Promise<{ logQ: number; 
     if (n !== wantN) continue;
     const card = await textOf(page, '[data-param-out]');
     return {
-      logQ: Number(card.match(/security\s*(\d+) bits/)![1]),
+      logQ: Number(card.match(/profile\s*(\d+) bits/)![1]),
       depth: Number(card.match(/depth\s*≈ (\d+) level/)![1]),
     };
   }

@@ -174,14 +174,14 @@ app.innerHTML = `
         <p>
           Start from a fresh ciphertext of 3 and apply operations. Addition barely dents the budget; a single
           multiplication consumes most of it (toy parameters are small, so the effect is dramatic). When the budget
-          hits 0, decryption returns garbage. Every row below is a <strong>real measurement</strong>.
+          hits 0, correct decryption is no longer guaranteed. Every row below is a <strong>real measurement</strong>.
         </p>
         <div class="row" role="toolbar" aria-label="Exhibit 3 controls">
           <button class="action" data-e3-reset>Reset to fresh ct(3)</button>
           <button class="action" data-e3-add>+ Add 1</button>
           <button class="action action-orange" data-e3-mul>× Multiply by 2</button>
           <button class="action action-orange" data-e3-auto>▶ Multiply until it breaks</button>
-          <button class="action" data-e3-boot>♻ Bootstrap (refresh)</button>
+          <button class="action" data-e3-boot>Trusted refresh</button>
           <button class="action" data-e3-dec>Attempt decrypt</button>
         </div>
         <p data-e3-ops aria-live="polite" role="status">Sequence: fresh</p>
@@ -209,9 +209,8 @@ app.innerHTML = `
         </div>
         <div class="callout" role="note">
           <strong>Modulus switching (BGV) &amp; scale invariance (BFV)</strong> rein in noise after each multiplication so more levels fit before exhaustion. BGV drops to a smaller modulus level by level; BFV instead keeps the plaintext in the high-order bits (&Delta;&nbsp;=&nbsp;&lfloor;q/t&rfloor;), holding the noise-to-modulus ratio steady without per-level switching. <em>Rescaling</em> is CKKS's technique, and it manages the plaintext scale rather than noise alone.
-          A production ciphertext at n&nbsp;=&nbsp;4096 is capped at <code>log₂(q)</code>&nbsp;=&nbsp;109 bits, and at roughly 25 bits a multiplication that is about 3 levels — the depth the Exhibit 5 parameter explorer prints for that degree. The 10–30 multiplications a deep circuit needs take a larger degree: n&nbsp;=&nbsp;16384 (<code>log₂(q)</code>&nbsp;=&nbsp;438 bits) scores about 16 levels.
-          When levels run out, only <em>bootstrapping</em> — homomorphically decrypting to refresh the budget — lets computation continue.
-          Press <strong>♻ Bootstrap</strong> to watch the budget snap back to full. The honest caveat: real bootstrapping runs <em>without</em> the secret key (that is what makes it so expensive) and must happen <em>before</em> the budget hits 0 — it refreshes noise, it cannot recover data already destroyed by overflow.
+          Under the 2018 standard profile used in Exhibit 5, n&nbsp;=&nbsp;4096 has a recommended bound of <code>log₂(q)</code> = 109 bits. This lab’s depth heuristic gives about 3 levels there and about 16 levels at n&nbsp;=&nbsp;16384 (log₂(q) = 438 bits). Actual depth depends on the parameters and circuit.
+          <strong>Trusted refresh</strong> uses the secret key to decrypt the current ciphertext, then encrypts that value again. It is available while the budget is positive. FHE bootstrapping instead evaluates decryption homomorphically while the ciphertext can still be decrypted correctly.
         </div>
         <div class="callout" role="note" id="decryption-feedback-research">
           <strong>Research update — 20 October 2026: when decryption results leak.</strong>
@@ -292,16 +291,16 @@ app.innerHTML = `
               <tr><td>Data type</td><td>Integers mod t</td><td>Integers mod t</td><td>Single bits</td></tr>
               <tr><td>Operations</td><td>Add, multiply</td><td>Add, multiply</td><td>Boolean gates</td></tr>
               <tr><td>Noise management</td><td>Modulus switching</td><td>Scale-invariant (no per-level switching)</td><td>Frequent bootstrapping</td></tr>
-              <tr><td>Multiplication depth</td><td>~10–30 levels</td><td>~10–20 levels</td><td>Unlimited (bootstrap each gate)</td></tr>
+              <tr><td>Multiplication depth</td><td>Set by parameters and circuit</td><td>Set by parameters and circuit</td><td>Unlimited (bootstrap each gate)</td></tr>
               <tr><td>Batching (SIMD)</td><td>Yes (CRT packing)</td><td>Yes (CRT packing)</td><td>No</td></tr>
-              <tr><td>Best for</td><td>Deeper integer circuits</td><td>Accessible integer workloads</td><td>Arbitrary bit logic</td></tr>
+              <tr><td>Best for</td><td>Exact integer arithmetic with modulus switching</td><td>Exact integer arithmetic with scaled plaintexts</td><td>Arbitrary bit logic</td></tr>
               <tr><td>Libraries</td><td>HElib, OpenFHE</td><td>SEAL (default), OpenFHE</td><td>TFHE-rs, Concrete</td></tr>
               <tr><td>In crypto-lab</td><td>Compared here (not a live engine)</td><td>This demo's live engine</td><td>Blind Oracle</td></tr>
             </tbody>
           </table>
         </div>
         <div class="callout" role="note">
-          <strong>Decision tree:</strong> integer statistics &rarr; BFV/BGV · deep multiplications &rarr; BGV ·
+          <strong>Decision tree:</strong> exact integer statistics &rarr; BFV or BGV, sized for the circuit depth and library ·
           arbitrary boolean logic &rarr; TFHE · approximate real arithmetic &rarr; CKKS.
         </div>
         <div class="row" role="toolbar" aria-label="Timing test">
@@ -313,9 +312,9 @@ app.innerHTML = `
         <p>
           A larger polynomial degree <code>n</code> permits a larger coefficient modulus <code>q</code> at the same
           security level, which buys more noise budget — and therefore more multiplications — but every operation gets
-          slower. The maximum <code>log₂(q)</code> values below are from the
+          slower. These recommended <code>log₂(q)</code> bounds come from Table 1 of the
           <a href="https://homomorphicencryption.org/standard/" target="_blank" rel="noreferrer">Homomorphic Encryption Standard</a>
-          (128-bit classical security). Drag the slider.
+          (128-bit classical BKZ.sieve estimates, ternary secret, error standard deviation about 3.2, March 2018 estimator). The depth estimate below is the lab’s own heuristic.
         </p>
         <label for="param-n">Polynomial degree n = <strong data-param-n-label>4096</strong></label>
         <input id="param-n" type="range" min="0" max="5" step="1" value="2" data-param-n aria-describedby="param-out" />
@@ -590,9 +589,11 @@ const e3Ctrls = ['[data-e3-reset]', '[data-e3-add]', '[data-e3-mul]', '[data-e3-
   (sel) => document.querySelector(sel) as HTMLButtonElement
 )
 
+const e3Refresh = document.querySelector('[data-e3-boot]') as HTMLButtonElement
+
 function lockE3(disabled: boolean): void {
   e3Ctrls.forEach((btn) => {
-    btn.disabled = disabled
+    btn.disabled = disabled || (btn === e3Refresh && engine.noiseBudgetBits(e3Ct) <= 0)
   })
 }
 
@@ -639,6 +640,7 @@ function renderE3Chart(): void {
 }
 
 function syncE3(): void {
+  e3Refresh.disabled = e3Running || engine.noiseBudgetBits(e3Ct) <= 0
   e3OpsEl.textContent = `Sequence: ${e3Ops.length ? e3Ops.join(' → ') : 'fresh'}`
   renderBudget('[data-e3-budget]', '[data-e3-budget-label]', e3Ct)
 }
@@ -680,14 +682,12 @@ function resetE3(): void {
   syncE3()
 }
 
-function bootstrapE3(): void {
-  // Bootstrapping refreshes the noise budget. A real implementation does this
-  // homomorphically (no secret key); here we re-encrypt the tracked value to
-  // illustrate the budget jumping back to full.
-  e3Ct = engine.encryptScalar(e3Ct.message[0])
-  e3Ops.push('bootstrap')
+function trustedRefreshE3(): void {
+  if (e3Running || engine.noiseBudgetBits(e3Ct) <= 0) return
+  e3Ct = engine.encryptScalar(engine.decryptScalar(e3Ct))
+  e3Ops.push('trusted refresh')
   e3Step += 1
-  logE3('♻ Bootstrap (refresh)')
+  logE3('Trusted refresh')
   syncE3()
 }
 
@@ -739,7 +739,7 @@ async function autoRunE3(): Promise<void> {
 
 ;(document.querySelector('[data-e3-mul]') as HTMLButtonElement).addEventListener('click', multiplyE3)
 ;(document.querySelector('[data-e3-auto]') as HTMLButtonElement).addEventListener('click', autoRunE3)
-;(document.querySelector('[data-e3-boot]') as HTMLButtonElement).addEventListener('click', bootstrapE3)
+;(document.querySelector('[data-e3-boot]') as HTMLButtonElement).addEventListener('click', trustedRefreshE3)
 ;(document.querySelector('[data-e3-dec]') as HTMLButtonElement).addEventListener('click', decryptE3)
 
 // ── Exhibit 4 ──────────────────────────────────────────────────────────────
@@ -900,9 +900,9 @@ function renderParam(): void {
   const speed =
     row.n <= 2048 ? 'very fast' : row.n <= 4096 ? 'fast' : row.n <= 8192 ? 'moderate' : row.n <= 16384 ? 'slow' : 'very slow'
   paramLabel.textContent = row.n.toLocaleString()
-  paramSlider.setAttribute('aria-valuetext', `n = ${row.n}, max log2 q = ${row.logq} bits, about ${depth} multiplication levels, ${speed}`)
+  paramSlider.setAttribute('aria-valuetext', `n = ${row.n}, profile bound log2 q = ${row.logq} bits, about ${depth} multiplication levels, ${speed}`)
   paramOut.innerHTML = [
-    ['Max log₂(q) @ 128-bit security', `${row.logq} bits`],
+    ['Recommended log₂(q) for this profile', `${row.logq} bits`],
     ['Est. multiplication depth', `≈ ${depth} level${depth === 1 ? '' : 's'}`],
     ['Relative op cost vs n=4096', `~${relCost}×`],
     ['Speed', speed]

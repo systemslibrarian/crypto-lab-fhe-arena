@@ -4,12 +4,12 @@
 
 FHE Arena runs a live toy of **BFV** (Brakerski; Fan-Vercauteren, 2012) — one of the two most widely deployed integer Fully Homomorphic Encryption schemes — and **compares** it against its close relative **BGV** (Brakerski-Gentry-Vaikuntanathan, 2012) in the tables and prose. Only BFV is implemented as a runnable engine here; BGV is discussed for contrast, not executed. Both schemes encrypt integers and support addition and multiplication directly on ciphertexts, allowing a server to compute on encrypted data without ever decrypting it. The central challenge is the noise budget: every operation adds noise to the ciphertext, and when noise exceeds a threshold, decryption fails. BGV manages this via **modulus switching**, dropping to a smaller modulus level by level to keep relative noise in check; BFV instead is **scale-invariant** — the plaintext rides in the high-order bits (Δ = ⌊q/t⌋) and the scaling factor holds the noise-to-modulus ratio steady, so no per-level modulus switching is required. *Rescaling* is CKKS's technique, and it manages the plaintext **scale**, not noise alone. This demo is the integer FHE companion to Blind Oracle (TFHE bit-level FHE).
 
-> **Honesty note.** The live engine is a *toy* BFV over real negacyclic ring arithmetic at insecure parameters (n=64, t=17, q=65537). It samples randomness with `Math.random()` (not cryptographically secure) and does **not** implement production BFV *SIMD batching*: values are packed into polynomial **coefficient** slots, so batched **addition** is genuinely slot-wise, but multiplication is a negacyclic convolution that mixes slots — unlike real CRT/NTT-slot SIMD. BGV is not a second live engine. Everything the demo *computes* (encrypt/decrypt, add, multiply→relinearize→rescale, noise budgets, the vote tally) is real and unit-tested; nothing is faked.
+> **Honesty note.** The live engine is a *toy* BFV over real negacyclic ring arithmetic at insecure parameters (n=64, t=17, q=65537). It samples randomness with `Math.random()` (not cryptographically secure) and does **not** implement production BFV *SIMD batching*: values are packed into polynomial **coefficient** slots, so batched **addition** is genuinely slot-wise, but multiplication is a negacyclic convolution that mixes slots — unlike real CRT/NTT-slot SIMD. BGV is not a second live engine. Everything the demo *computes* (encrypt/decrypt, add, multiply with BFV scale correction → relinearize, noise budgets, the vote tally) is real and unit-tested; nothing is faked.
 
 ## When to Use It
 
 - BFV: encrypted integer arithmetic, simple-to-moderate computation depth, most accessible starting point (Microsoft SEAL default)
-- BGV: deeper computation requiring more multiplication levels, statistical workloads on encrypted integers
+- BGV: exact encrypted integer arithmetic using modulus switching. Compare parameters, circuit depth and library support when choosing between BGV and BFV.
 - Both: encrypted database queries, private genomics, encrypted voting tallying, private machine learning inference on integer data
 - Neither is suitable for encrypted floating-point / approximate arithmetic — use CKKS for that (see crypto-lab-ckks-lab)
 - Neither supports unlimited computation depth without bootstrapping (expensive — plan your circuit depth carefully)
@@ -30,12 +30,12 @@ Every number in the demo is computed by a real (toy-parameter) BFV engine over g
 - **Measured, not asserted.** Exhibit 3 logs the *real measured* noise and budget after each operation and plots it on a live chart — addition steps glide flat, each multiplication drops a cliff. A "multiply until it breaks" button animates the collapse to the decryption-failure floor.
 - **Honest about failure.** When the budget is exhausted the demo shows the *actual* (corrupted) decryption and explains that the budget is a guarantee over the whole ciphertext — a single slot may coincidentally survive while the rest is garbage. Nothing is faked to look broken.
 - **Randomized encryption, shown.** Encrypt the same value twice and compare distinct ciphertexts that both decrypt correctly. This demonstrates randomization, not IND-CPA security: differing ciphertexts alone do not establish indistinguishability, and this insecure toy provides no such guarantee.
-- **Bootstrapping, shown.** Exhaust the budget, then press *Bootstrap* and watch it snap back to full — with an honest note that real bootstrapping refreshes noise homomorphically (without the key) and must run *before* overflow, not after.
-- **The parameter tradeoff, hands-on.** A slider over the real Homomorphic Encryption Standard (128-bit security) shows how a larger degree `n` buys a larger modulus `q` → more multiplicative depth → but slower operations.
+- **Trusted refresh.** While the budget is positive, decrypt with the teaching key and re-encrypt that value. At zero budget the control is disabled. Actual bootstrapping evaluates decryption homomorphically and requires a still-decryptable input.
+- **The parameter tradeoff, hands-on.** A slider over one 2018 Homomorphic Encryption Standard profile (128-bit classical BKZ.sieve, ternary secret, error standard deviation about 3.2) shows how a larger degree `n` buys a larger modulus `q` → more multiplicative depth → but slower operations.
 - **A live private computation.** Cast ten secret Yes/No ballots, encrypt them, homomorphically sum the ciphertexts, and decrypt *only the tally* — the headline FHE application, verifiable end to end, with no individual vote ever revealed.
 - **Verification badges.** Encrypted results are checked against plaintext arithmetic with ✓/✗ badges, so the homomorphic payoff is unmissable.
 
-Six exhibits: the core idea (compute on locked boxes, with a client/server trust diagram); encrypt-add-decrypt with the live `Δ·m + e` reveal and a randomized-encryption demo; the noise-budget visualizer with a live chart, animated "multiply until it breaks", and a bootstrapping refresh; multiplication, relinearization (2→3→2 ciphertext components) and coefficient packing (batched add); a BGV vs BFV vs TFHE comparison table, decision tree, and interactive parameter explorer; and real-world FHE deployments capped by a live encrypted vote tally.
+Six exhibits: the core idea (compute on locked boxes, with a client/server trust diagram); encrypt-add-decrypt with the live `Δ·m + e` reveal and a randomized-encryption demo; the noise-budget visualizer with a live chart, animated "multiply until it breaks", and a trusted decrypt-and-re-encrypt refresh; multiplication, relinearization (2→3→2 ciphertext components) and coefficient packing (batched add); a BGV vs BFV vs TFHE comparison table, decision tree, and interactive parameter explorer; and real-world FHE deployments capped by a live encrypted vote tally.
 
 ## What Can Go Wrong
 
@@ -67,7 +67,7 @@ npm run dev
 ## Tests
 
 ```bash
-npm test          # vitest: toy-BFV crypto unit tests (round-trip, add, multiply→relinearize→rescale, noise budget, vote tally)
+npm test          # vitest: toy-BFV crypto unit tests (round-trip, add, multiply with BFV scale correction → relinearize, noise budget, vote tally)
 npm run test:a11y # Playwright: browser claim assertions (e2e/claims.spec.ts) + axe-core WCAG A/AA gate (e2e/a11y.spec.ts, both themes)
 ```
 
